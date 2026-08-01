@@ -1,0 +1,85 @@
+name: CI — Build, Test & Auto-merge
+
+on:
+  push:
+    branches: [main, ci/setup-pipeline]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  backend-test:
+    name: Backend (Maven + JaCoCo)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Build & run tests
+        working-directory: backend
+        run: mvn -B verify
+      - name: Upload JaCoCo report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: backend/target/site/jacoco/
+
+  frontend-build:
+    name: Frontend (Vite build)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+  auto-merge:
+    name: Auto-merge CI branch into main
+    needs: [backend-test, frontend-build]
+    # Chỉ kích hoạt khi push lên nhánh ci/setup-pipeline
+    if: github.ref == 'refs/heads/ci/setup-pipeline' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          ref: ci/setup-pipeline
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Merge ci/setup-pipeline into main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          git config user.email "ci@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git fetch origin main
+          git checkout main
+          git merge --no-ff origin/ci/setup-pipeline -m "ci: auto-merge CI pipeline into main"
+          git push origin main
+          echo "Merged into main successfully"
+
+      - name: Delete CI branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git push origin --delete ci/setup-pipeline || echo "Branch already deleted"

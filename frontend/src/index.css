@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  @apply bg-slate-50 text-slate-800 font-sans antialiased;
+}
+
+/* Hiệu ứng focus chuẩn cho input */
+@layer components {
+  .input-base {
+    @apply w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm
+      outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5
+      text-sm font-semibold text-white shadow-card transition hover:bg-brand-600
+      active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-accent {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-accent-500 px-5 py-2.5
+      text-sm font-semibold text-white shadow-card transition hover:bg-accent-600 active:scale-[0.98];
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5
+      text-sm font-semibold text-slate-600 transition hover:bg-slate-50;
+  }
+  .chip {
+    @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-medium;
+  }
+  .chip-btn {
+    @apply inline-flex items-center rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700;
+  }
+  .shadow-card {
+    @apply shadow-sm;
+  }
+  .hero-network {
+    background-image: url('/ob-network.svg');
+  }
+}

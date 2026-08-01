@@ -1,0 +1,10 @@
+_repos/
+.scratch/
+node_modules/
+dist/
+target/
+*.jar
+.env
+.env.*
+!.env.example
+.DS_Store
