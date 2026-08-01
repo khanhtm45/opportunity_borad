@@ -52,48 +52,34 @@ jobs:
         working-directory: frontend
         run: npm run build
   auto-merge:
-    name: Auto-create PR & merge into main
+    name: Auto-merge CI branch into main
     needs: [backend-test, frontend-build]
     # Chỉ kích hoạt khi push lên nhánh ci/setup-pipeline
     if: github.ref == 'refs/heads/ci/setup-pipeline' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout full history
         uses: actions/checkout@v4
+        with:
+          ref: ci/setup-pipeline
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create PR and merge into main via API
+      - name: Merge ci/setup-pipeline into main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
-          API="https://api.github.com/repos/khanhtm45/opportunity_borad"
-          # 1. Tạo PR (bắt lỗi rõ ràng)
-          echo "Creating PR..."
-          BODY=$(jq -n --arg t "CI: tests + auto-merge" --arg b "Tự động thiết lập CI: backend Maven verify, frontend Vite build, auto-merge vào main khi xanh." \
-            '{head:"ci/setup-pipeline", base:"main", title:$t, body:$b}')
-          RESP=$(curl -s -w "\n%{http_code}" -X POST \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "$API/pulls" -d "$BODY")
-          HTTP=$(echo "$RESP" | tail -1)
-          PR_JSON=$(echo "$RESP" | sed '$d')
-          PR_NUM=$(echo "$PR_JSON" | jq -r '.number // empty')
-          if [ -z "$PR_NUM" ]; then
-            echo "PR CREATE FAILED (HTTP $HTTP):"; echo "$PR_JSON"; exit 1
-          fi
-          echo "PR #$PR_NUM created (HTTP $HTTP)"
+          git config user.email "ci@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git fetch origin main
+          git checkout main
+          git merge --no-ff origin/ci/setup-pipeline -m "ci: auto-merge CI pipeline into main"
+          git push origin main
+          echo "Merged into main successfully"
 
-          # 2. Merge (main không protect nên GITHUB_TOKEN merge được)
-          echo "Merging PR #$PR_NUM into main..."
-          MRESP=$(curl -s -w "\n%{http_code}" -X PUT \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "$API/pulls/$PR_NUM/merge" -d '{"merge_method":"squash"}')
-          MHTTP=$(echo "$MRESP" | tail -1)
-          echo "Merge HTTP $MHTTP"
-          echo "$MRESP" | sed '$d'
-          if [ "$MHTTP" != "200" ]; then echo "MERGE FAILED"; exit 1; fi
-
-          # 3. Xóa nhánh ci/setup-pipeline
-          curl -s -X DELETE -H "Authorization: Bearer $GITHUB_TOKEN" \
-            "$API/git/refs/heads/ci/setup-pipeline" && echo "Branch deleted" || echo "Branch delete skipped"
+      - name: Delete CI branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git push origin --delete ci/setup-pipeline || echo "Branch already deleted"
