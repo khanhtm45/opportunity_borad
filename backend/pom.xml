@@ -23,7 +23,7 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <!-- SonarCloud: project key/org (token lấy từ SONAR_TOKEN secret) -->
-        <sonar.projectKey>opportunity_board_ci</sonar.projectKey>
+        <sonar.projectKey>khanhtm45_opportunity_borad</sonar.projectKey>
         <sonar.organization>khanhtm45</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
@@ -154,7 +154,9 @@
                         </goals>
                     </execution>
                     <!-- Quality gate mức build: fail nếu coverage dưới ngưỡng.
-                         Nâng dần (vd 0.50) sau khi có số liệu thực từ SonarCloud. -->
+                         Đo thực tế: LINE 42.3% / BRANCH 37.3% (18 tests).
+                         Đặt LINE>=0.40, BRANCH>=0.30 để có ý nghĩa mà không fail do biến động nhỏ.
+                         Có thể nâng tiếp (vd 0.50) khi bổ sung thêm tests. -->
                     <execution>
                         <id>check</id>
                         <goals>
@@ -168,12 +170,12 @@
                                         <limit>
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.01</minimum>
+                                            <minimum>0.40</minimum>
                                         </limit>
                                         <limit>
                                             <counter>BRANCH</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.01</minimum>
+                                            <minimum>0.30</minimum>
                                         </limit>
                                     </limits>
                                 </rule>

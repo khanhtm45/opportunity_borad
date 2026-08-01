@@ -1,7 +1,11 @@
 import axios from 'axios'
 
+// Production (GitHub Pages): set VITE_API_URL = https://your-api.example.com/api/v1
+// Local/dev: fallback /api/v1 (Vite proxy → :8080)
+const API_BASE = import.meta.env.VITE_API_URL || '/api/v1'
+
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: API_BASE,
   headers: { 'Content-Type': 'application/json' },
 })
 
@@ -26,7 +30,7 @@ api.interceptors.response.use(
         refreshing =
           refreshing ||
           axios
-            .post('/api/v1/auth/refresh', { refreshToken })
+            .post(`${API_BASE}/auth/refresh`, { refreshToken })
             .then((r) => {
               localStorage.setItem('accessToken', r.data.accessToken)
               return r.data.accessToken
@@ -38,7 +42,8 @@ api.interceptors.response.use(
       } catch (e) {
         refreshing = null
         localStorage.clear()
-        window.location.href = '/login'
+        const base = import.meta.env.BASE_URL || '/'
+        window.location.href = `${base}login`.replace(/\/{2,}/g, '/')
         return Promise.reject(e)
       }
     }
