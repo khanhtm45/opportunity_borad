@@ -1,0 +1,44 @@
+# DigitalOcean App Platform — BE Spring Boot
+# Tạo app: https://cloud.digitalocean.com/apps → Create App → GitHub
+#   repo: khanhtm45/opportunity_borad, branch: main
+#   hoặc: doctl apps create --spec .do/app.yaml
+#
+# Sau khi có URL (vd https://opportunity-board-xxxx.ondigitalocean.app):
+#   GitHub → Settings → Variables → VITE_API_URL =
+#   https://opportunity-board-xxxx.ondigitalocean.app/api/v1
+# rồi re-run workflow Deploy (Pages) để FE trỏ đúng API.
+
+name: opportunity-board
+region: sgp
+
+services:
+  - name: api
+    github:
+      repo: khanhtm45/opportunity_borad
+      branch: main
+      deploy_on_push: true
+    dockerfile_path: backend/Dockerfile
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    routes:
+      - path: /
+    health_check:
+      http_path: /api/v1/categories
+      initial_delay_seconds: 60
+      period_seconds: 20
+      timeout_seconds: 10
+      success_threshold: 1
+      failure_threshold: 6
+    envs:
+      - key: JWT_SECRET
+        scope: RUN_TIME
+        type: SECRET
+        value: CHANGE_ME_SET_IN_DO_UI_32chars_min!!
+      - key: DB_PASSWORD
+        scope: RUN_TIME
+        type: SECRET
+        value: SET_IN_DIGITALOCEAN_UI
+      - key: PORT
+        scope: RUN_TIME
+        value: "8080"

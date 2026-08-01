@@ -1,11 +1,12 @@
 # Deploy:
 # - FE → GitHub Pages (https://khanhtm45.github.io/opportunity_borad/)
-# - BE → GitHub Releases (fat JAR mỗi lần push main)
+# - BE → GitHub Releases (fat JAR) + runtime trên DigitalOcean App Platform
+#   (xem .do/app.yaml — DO auto-deploy từ GitHub khi push main)
 #
-# Setup (khuyến nghị):
-# - Variables → Actions: VITE_API_URL = https://your-api.example.com/api/v1
-#   (khi BE đã chạy đâu đó; Releases chỉ upload JAR, không host server)
-# - Pages được bật tự động qua configure-pages enablement=true
+# Setup:
+# - DO: Create App từ repo, Dockerfile = backend/Dockerfile, set secrets JWT_SECRET + DB_PASSWORD
+# - GitHub Variables → VITE_API_URL = https://<app>.ondigitalocean.app/api/v1
+# - Pages: configure-pages enablement=true
 
 name: Deploy — Pages + Releases
 

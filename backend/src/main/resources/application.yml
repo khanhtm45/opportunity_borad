@@ -1,5 +1,6 @@
 server:
-  port: 8080
+  # DigitalOcean App Platform injects PORT; local default 8080
+  port: ${PORT:8080}
 
 spring:
   application:

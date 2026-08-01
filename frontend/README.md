@@ -48,16 +48,18 @@ npm run dev      # http://localhost:5173  (proxy /api -> :8080)
 npm run build    # dist/ production
 ```
 
-### Deploy (GitHub Actions)
-Push lên `main` → workflow [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml):
-- **FE → GitHub Pages:** `https://khanhtm45.github.io/opportunity_borad/`
-- **BE → GitHub Releases:** fat JAR gắn tag `backend-<run_number>`
+### Deploy
+Push `main`:
+- **FE → GitHub Pages:** `https://khanhtm45.github.io/opportunity_borad/` ([`deploy.yml`](../.github/workflows/deploy.yml))
+- **BE runtime → DigitalOcean App Platform:** [`.do/app.yaml`](../.do/app.yaml) + [`backend/Dockerfile`](../backend/Dockerfile) (auto deploy khi push, vì đã link GitHub)
+- **BE artifact → GitHub Releases:** fat JAR `backend-<run_number>`
 
-Setup trên GitHub:
-1. Pages được bật bởi workflow (`configure-pages` + `enablement: true`). Có thể kiểm tra **Settings → Pages → Source = GitHub Actions**.
-2. **Settings → Variables → Actions:** tạo `VITE_API_URL` = URL API thật (vd `https://your-api.example.com/api/v1`). Releases chỉ upload JAR, không chạy server — FE cần biến này khi BE đã host đâu đó.
+Setup:
+1. [DigitalOcean Apps](https://cloud.digitalocean.com/apps) → Create App → GitHub `khanhtm45/opportunity_borad` → dùng Dockerfile `backend/Dockerfile` → set secrets `JWT_SECRET`, `DB_PASSWORD`.
+2. Copy URL app (vd `https://….ondigitalocean.app`) → GitHub **Variables** `VITE_API_URL` = `https://….ondigitalocean.app/api/v1` → re-run Deploy Pages.
+3. Pages Source = GitHub Actions.
 
-Local: không set `VITE_API_URL` thì dùng `/api/v1` + Vite proxy `:8080`.
+Local: không set `VITE_API_URL` → `/api/v1` + Vite proxy `:8080`.
 
 ### Lưu ý
 - Proxy dev đã cấu hình forward `/api` tới backend Spring Boot.
