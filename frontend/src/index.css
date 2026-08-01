@@ -43,7 +43,4 @@ body {
   .shadow-card {
     @apply shadow-sm;
   }
-  .hero-network {
-    background-image: url('/ob-network.svg');
-  }
 }

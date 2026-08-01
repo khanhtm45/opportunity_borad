@@ -41,6 +41,9 @@ public class Opportunity {
     @Column(name = "logo_url")
     private String logoUrl; // logo riêng của cơ hội (ưu tiên); fallback org.logoUrl
 
+    @Column(name = "banner_url")
+    private String bannerUrl;
+
     @Column(nullable = false, unique = true)
     private String slug;
 
@@ -52,6 +55,12 @@ public class Opportunity {
 
     @Column(columnDefinition = "text")
     private String benefits;
+
+    @Column(name = "salary_or_reward", columnDefinition = "text")
+    private String salaryOrReward;
+
+    @Column(name = "selection_process", columnDefinition = "text")
+    private String selectionProcess;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -103,6 +112,8 @@ public class Opportunity {
     private int bookmarkCount = 0;
     @Builder.Default
     private int applicationCount = 0;
+    @Builder.Default
+    private int shareCount = 0;
 
     private Instant publishedAt;
 

@@ -15,8 +15,10 @@ export default function Navbar() {
   ]
   if (user) navItems.push({ to: '/me', label: 'Cá nhân' })
 
-  const isActive = (to) =>
-    pathname === to || (to !== '/' && pathname.startsWith(to))
+  const isActive = (to) => {
+    if (to === '/me') return pathname === '/me' || pathname.startsWith('/me/')
+    return pathname === to || (to !== '/' && pathname.startsWith(to))
+  }
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur">

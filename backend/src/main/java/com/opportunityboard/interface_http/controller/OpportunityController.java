@@ -63,6 +63,23 @@ public class OpportunityController {
         return ResponseEntity.ok(opportunityService.detail(slug));
     }
 
+    @PostMapping("/{id}/share")
+    public ResponseEntity<?> share(@PathVariable UUID id) {
+        return ResponseEntity.ok(opportunityService.share(id));
+    }
+
+    @PostMapping("/{id}/view")
+    public ResponseEntity<?> view(@PathVariable UUID id) {
+        opportunityService.recordView(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/external-click")
+    public ResponseEntity<?> externalClick(@PathVariable UUID id) {
+        opportunityService.externalClick(id);
+        return ResponseEntity.ok().build();
+    }
+
     // ----- Provider -----
     @PostMapping
     public ResponseEntity<?> create(@RequestBody OpportunityRequest req) {

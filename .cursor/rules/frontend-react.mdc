@@ -1,0 +1,13 @@
+---
+description: React/Vite frontend conventions for Opportunity Board UI
+globs: frontend/**/*
+alwaysApply: false
+---
+
+# Frontend rules
+
+- Vite `base` is `/opportunity_borad/` for GitHub Pages — never hardcode `/logo.png` roots.
+- Use `asset('file.ext')` from `src/lib/assets.js` for `public/` assets.
+- `BrowserRouter` must keep `basename={import.meta.env.BASE_URL}`.
+- API base: `import.meta.env.VITE_API_URL || '/api/v1'`.
+- Prefer existing Tailwind brand tokens (`brand`, `accent`, `gold`) over new palettes.

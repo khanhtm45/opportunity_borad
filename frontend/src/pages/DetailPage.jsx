@@ -7,6 +7,7 @@ import {
   WORKTYPE_LABELS, LOCATION_LABELS, fmtDate, fmtDateTime,
 } from '../lib/constants.js'
 import { InlineLoader } from '../components/Splash.jsx'
+import { asset } from '../lib/assets.js'
 
 export default function DetailPage() {
   const { slug } = useParams()
@@ -60,6 +61,18 @@ export default function DetailPage() {
     api.post(`/opportunities/${opp.oppId}/external-click`).catch(() => {})
   }
 
+  const share = async () => {
+    try {
+      await api.post(`/opportunities/${opp.oppId}/share`)
+      const url = window.location.href
+      if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(url)
+      setMsg('🔗 Đã copy link chia sẻ')
+      setOpp((prev) => prev ? { ...prev, shareCount: (prev.shareCount || 0) + 1 } : prev)
+    } catch (e) {
+      setMsg(e.response?.data?.error?.message || 'Không chia sẻ được')
+    }
+  }
+
   if (loading) return <div className="py-16 text-center"><InlineLoader label="Đang tải…" /></div>
   if (!opp) return <div className="py-16 text-center text-slate-400">Không tìm thấy cơ hội.</div>
 
@@ -69,7 +82,10 @@ export default function DetailPage() {
     <div className="grid gap-6 lg:grid-cols-3">
       <div className="lg:col-span-2 space-y-5">
         <button onClick={() => navigate(-1)} className="text-sm text-slate-500 hover:text-brand-600">← Quay lại</button>
-        <div className="rounded-2xl border border-slate-100 bg-cover bg-center p-6 text-white shadow-card" style={{ backgroundImage: 'url(/network-bg.svg)' }}>
+        <div
+          className="rounded-2xl border border-slate-100 bg-slate-900 bg-cover bg-center p-6 text-white shadow-card"
+          style={{ backgroundImage: `url(${opp.bannerUrl || asset('ob-network.svg')})` }}
+        >
           <div className="flex items-start gap-4">
             {opp.logoUrl ? <img src={opp.logoUrl} alt="" className="h-14 w-14 rounded-2xl object-cover" />
               : <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-gradient font-bold text-white">{(opp.orgName||'?').charAt(0)}</div>}
@@ -97,12 +113,15 @@ export default function DetailPage() {
             <button onClick={toggleSave} className={saved ? 'btn-ghost bg-gold-50 text-gold-700' : 'btn-ghost'}>
               {saved ? '🔖 Đã lưu' : '🔖 Lưu'}
             </button>
+            <button onClick={share} className="btn-ghost">↗ Chia sẻ</button>
           </div>
         </div>
 
         <Section title="Mô tả" html={opp.description} />
         <Section title="Yêu cầu" html={opp.requirements} />
         <Section title="Quyền lợi" html={opp.benefits} />
+        {opp.salaryOrReward && <Section title="Lương / giải thưởng" text={opp.salaryOrReward} />}
+        {opp.selectionProcess && <Section title="Quy trình tuyển chọn" text={opp.selectionProcess} />}
         {opp.applicationProcess && <Section title="Quy trình ứng tuyển" text={opp.applicationProcess} />}
       </div>
 
@@ -111,8 +130,16 @@ export default function DetailPage() {
           <h3 className="mb-3 text-sm font-bold text-slate-700">Thông tin nhanh</h3>
           <Row label="Hạn nộp" value={fmtDate(opp.deadline)} />
           <Row label="Đăng bởi" value={opp.orgName} />
+          {(opp.orgContactEmail || opp.orgWebsite) && (
+            <>
+              {opp.orgContactEmail && <Row label="Email" value={opp.orgContactEmail} />}
+              {opp.orgContactPhone && <Row label="SĐT" value={opp.orgContactPhone} />}
+              {opp.orgWebsite && <Row label="Website" value={opp.orgWebsite} />}
+            </>
+          )}
           <Row label="Lượt xem" value={opp.viewCount} />
           <Row label="Đã lưu" value={opp.bookmarkCount} />
+          <Row label="Chia sẻ" value={opp.shareCount ?? 0} />
         </div>
 
         {related.length > 0 && (

@@ -14,12 +14,15 @@ public record OpportunityRequest(
         String description,
         String requirements,
         String benefits,
+        String salaryOrReward,
+        String selectionProcess,
         LocationType location,
         WorkType workType,
         ApplyMode applyMode,
         String externalLink,
         String internalForm,
         String logoUrl,
+        String bannerUrl,
         Instant deadline,
         List<UUID> domainIds
 ) {}

@@ -4,6 +4,7 @@ import api from '../api/client.js'
 import { useAuth } from '../context/AuthContext.jsx'
 import { CATEGORY_LABELS, CATEGORY_STYLES } from '../lib/constants.js'
 import { InlineLoader } from '../components/Splash.jsx'
+import { asset } from '../lib/assets.js'
 
 const FEATURE_BOXES = [
   { t: 'Hackathon', d: 'Cuộc thi đổi mới sáng tạo, giải thưởng lớn.', c: 'bg-brand-50 text-brand-700', to: '/explore?cat=HACKATHON' },
@@ -27,7 +28,7 @@ export default function HomePage() {
         {/* nền mạng lưới mờ */}
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.18]"
-          style={{ backgroundImage: "url('/ob-network.svg')", backgroundSize: 'cover', backgroundPosition: 'center' }}
+          style={{ backgroundImage: `url(${asset('ob-network.svg')})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
         />
         <div className="relative grid items-center gap-8 md:grid-cols-2">
           <div>
@@ -45,7 +46,7 @@ export default function HomePage() {
           </div>
           {/* Graphic OB gradient */}
           <div className="hidden justify-center md:flex">
-            <img src="/ob-logo.svg" alt="Opportunity Board" className="w-64 drop-shadow-xl" />
+            <img src={asset('ob-logo.svg')} alt="Opportunity Board" className="w-64 drop-shadow-xl" />
           </div>
         </div>
       </section>

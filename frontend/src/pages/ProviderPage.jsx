@@ -8,11 +8,13 @@ import {
   CATEGORY_LABELS, OPP_STATUS_STYLES, STATUS_LABELS,
   WORKTYPE_LABELS, LOCATION_LABELS, fmtDate,
 } from '../lib/constants.js'
+import { asset } from '../lib/assets.js'
 
 const EMPTY = {
   title: '', categoryCode: 'INTERNSHIP', workType: 'ONLINE', location: 'TOAN_QUOC',
-  deadline: '', description: '', requirements: '', benefits: '', applyMode: 'INTERNAL',
-  logoUrl: '', externalLink: '',
+  deadline: '', description: '', requirements: '', benefits: '',
+  salaryOrReward: '', selectionProcess: '', applyMode: 'INTERNAL',
+  logoUrl: '', bannerUrl: '', externalLink: '',
 }
 
 export default function ProviderPage() {
@@ -101,7 +103,7 @@ export default function ProviderPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="overflow-hidden rounded-3xl bg-cover bg-center p-6 text-white shadow-card" style={{ backgroundImage: 'url(/network-bg.svg)' }}>
+      <div className="overflow-hidden rounded-3xl bg-slate-900 bg-cover bg-center p-6 text-white shadow-card" style={{ backgroundImage: `url(${asset('ob-network.svg')})` }}>
         <h1 className="text-xl font-extrabold drop-shadow md:text-2xl">🏢 Nhà tuyển dụng</h1>
         <p className="mt-1 text-sm text-white/85">Quản lý tin đăng, theo dõi ứng viên và thống kê.</p>
       </div>
@@ -126,6 +128,7 @@ export default function ProviderPage() {
             {msg && <div className="rounded-lg bg-brand-50 px-3 py-2 text-sm text-brand-700">{msg}</div>}
             <input className="input-base" placeholder="Tiêu đề" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
             <input className="input-base" placeholder="Logo URL (https://... để trống dùng logo tổ chức)" value={form.logoUrl || ''} onChange={(e) => setForm({ ...form, logoUrl: e.target.value })} />
+            <input className="input-base" placeholder="Banner URL (ảnh hero/card)" value={form.bannerUrl || ''} onChange={(e) => setForm({ ...form, bannerUrl: e.target.value })} />
             <div className="grid grid-cols-2 gap-3">
               <select className="input-base" value={form.categoryCode} onChange={(e) => setForm({ ...form, categoryCode: e.target.value })}>
                 {Object.entries(CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -145,6 +148,8 @@ export default function ProviderPage() {
             <textarea className="input-base" rows={3} placeholder="Mô tả" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
             <textarea className="input-base" rows={2} placeholder="Yêu cầu" value={form.requirements} onChange={(e) => setForm({ ...form, requirements: e.target.value })} />
             <textarea className="input-base" rows={2} placeholder="Quyền lợi" value={form.benefits} onChange={(e) => setForm({ ...form, benefits: e.target.value })} />
+            <textarea className="input-base" rows={2} placeholder="Lương / giải thưởng" value={form.salaryOrReward || ''} onChange={(e) => setForm({ ...form, salaryOrReward: e.target.value })} />
+            <textarea className="input-base" rows={2} placeholder="Quy trình tuyển chọn / lịch trình" value={form.selectionProcess || ''} onChange={(e) => setForm({ ...form, selectionProcess: e.target.value })} />
             {form.applyMode === 'EXTERNAL' && (
               <input className="input-base" placeholder="External link (https://...)" value={form.externalLink || ''} onChange={(e) => setForm({ ...form, externalLink: e.target.value })} />
             )}

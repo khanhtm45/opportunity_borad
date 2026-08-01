@@ -11,6 +11,7 @@ public record OpportunityResponse(
         String slug,
         String orgName,
         String logoUrl,
+        String bannerUrl,
         String categoryCode,
         DisplayStatus displayStatus,     // OPEN / CLOSING_SOON / EXPIRED / HIDDEN
         Instant deadline,
@@ -19,7 +20,8 @@ public record OpportunityResponse(
         boolean isFeatured,
         int viewCount,
         int bookmarkCount,
-        int applicationCount
+        int applicationCount,
+        int shareCount
 ) {
     public enum DisplayStatus { OPEN, CLOSING_SOON, EXPIRED, HIDDEN }
 }

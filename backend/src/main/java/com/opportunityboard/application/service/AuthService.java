@@ -87,6 +87,7 @@ public class AuthService {
                 .orgName(req.orgName())
                 .website(req.website())
                 .description(req.description())
+                .contactEmail(req.contactEmail())
                 .verifiedStatus(OrgVerified.PENDING)
                 .build();
         organizationRepository.save(org);
