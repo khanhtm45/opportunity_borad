@@ -53,8 +53,8 @@ Push lên `main` → workflow [`.github/workflows/deploy.yml`](../.github/workfl
 - **FE → GitHub Pages:** `https://khanhtm45.github.io/opportunity_borad/`
 - **BE → GitHub Releases:** fat JAR gắn tag `backend-<run_number>`
 
-Setup một lần trên GitHub:
-1. **Settings → Pages → Source = GitHub Actions**
+Setup trên GitHub:
+1. Pages được bật bởi workflow (`configure-pages` + `enablement: true`). Có thể kiểm tra **Settings → Pages → Source = GitHub Actions**.
 2. **Settings → Variables → Actions:** tạo `VITE_API_URL` = URL API thật (vd `https://your-api.example.com/api/v1`). Releases chỉ upload JAR, không chạy server — FE cần biến này khi BE đã host đâu đó.
 
 Local: không set `VITE_API_URL` thì dùng `/api/v1` + Vite proxy `:8080`.

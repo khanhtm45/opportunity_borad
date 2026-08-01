@@ -2,11 +2,10 @@
 # - FE → GitHub Pages (https://khanhtm45.github.io/opportunity_borad/)
 # - BE → GitHub Releases (fat JAR mỗi lần push main)
 #
-# Setup một lần:
-# 1. Settings → Pages → Source = GitHub Actions
-# 2. Settings → Secrets and variables → Actions → Variables:
-#    VITE_API_URL = https://your-api.example.com/api/v1
-#    (khi BE đã chạy đâu đó; Releases chỉ upload JAR, không host server)
+# Setup (khuyến nghị):
+# - Variables → Actions: VITE_API_URL = https://your-api.example.com/api/v1
+#   (khi BE đã chạy đâu đó; Releases chỉ upload JAR, không host server)
+# - Pages được bật tự động qua configure-pages enablement=true
 
 name: Deploy — Pages + Releases
 
@@ -34,10 +33,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Node 20
+      - name: Set up Node 24
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
@@ -51,6 +50,9 @@ jobs:
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
+        with:
+          # Tự bật GitHub Pages (Source = GitHub Actions) nếu chưa cấu hình
+          enablement: true
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
