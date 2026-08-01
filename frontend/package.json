@@ -10,7 +10,7 @@
     "dev": "vite",
     "build": "vite build",
     "postbuild": "node scripts/copy-404.mjs",
-    "build:do": "npm install --include=dev && npm run build",
+    "build:do": "npm run build",
     "preview": "vite preview"
   },
   "dependencies": {

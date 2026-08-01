@@ -1,0 +1,8 @@
+node_modules
+dist
+.do-build-test
+.ci-test
+.env
+.env.*
+*.md
+.git

@@ -1,36 +1,16 @@
-# DigitalOcean App Platform — BE (Docker) + FE (static)
-# Create/update: doctl apps create --spec .do/app.yaml
-# hoặc sync trên UI theo các field bên dưới.
+# DigitalOcean App Platform — BE + FE (cùng repo, cùng branch main)
 #
-# FE trên DO: Source Directory = frontend
-# Build Command = npm run build:do
-# Output Directory = dist
-# Env: VITE_BASE_PATH=/  và VITE_API_URL=https://<api-host>/api/v1
+# Cách khuyến nghị (ổn định nhất): FE dùng Dockerfile (nginx)
+# - Component frontend: Dockerfile path = frontend/Dockerfile
+# - HTTP port = 8080
+# - Build-time env:
+#     VITE_BASE_PATH=/
+#     VITE_API_URL=https://<your-api-component>.ondigitalocean.app/api/v1
+#
+# Không dùng ${api.PUBLIC_URL} nếu FE và API là 2 App riêng — binding sẽ fail.
 
 name: opportunity-board
 region: sgp
-
-static_sites:
-  - name: frontend
-    github:
-      repo: khanhtm45/opportunity_borad
-      branch: main
-      deploy_on_push: true
-    source_dir: frontend
-    build_command: npm run build:do
-    output_dir: dist
-    catchall_document: index.html
-    envs:
-      - key: VITE_BASE_PATH
-        scope: BUILD_TIME
-        value: "/"
-      - key: VITE_API_URL
-        scope: BUILD_TIME
-        # Bind tới URL component api (điền tay trên UI nếu binding lỗi)
-        value: ${api.PUBLIC_URL}/api/v1
-      - key: NPM_CONFIG_PRODUCTION
-        scope: BUILD_TIME
-        value: "false"
 
 services:
   - name: api
@@ -43,7 +23,7 @@ services:
     instance_count: 1
     instance_size_slug: basic-xxs
     routes:
-      - path: /
+      - path: /api
     health_check:
       http_path: /api/v1/categories
       initial_delay_seconds: 60
@@ -63,17 +43,24 @@ services:
         scope: RUN_TIME
         type: SECRET
         value: CHANGE_ME_SET_IN_DO_UI_32chars_min!!
-      - key: MAIL_HOST
-        scope: RUN_TIME
-        value: smtp.example.com
-      - key: MAIL_PORT
-        scope: RUN_TIME
-        value: "587"
-      - key: MAIL_USERNAME
-        scope: RUN_TIME
-        type: SECRET
-        value: ""
-      - key: MAIL_PASSWORD
-        scope: RUN_TIME
-        type: SECRET
-        value: ""
+
+  - name: frontend
+    github:
+      repo: khanhtm45/opportunity_borad
+      branch: main
+      deploy_on_push: true
+    dockerfile_path: frontend/Dockerfile
+    source_dir: frontend
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    routes:
+      - path: /
+    envs:
+      - key: VITE_BASE_PATH
+        scope: BUILD_TIME
+        value: "/"
+      - key: VITE_API_URL
+        scope: BUILD_TIME
+        # Điền URL API thật trên UI DO (không dùng binding nếu App FE tách riêng)
+        value: "https://REPLACE_WITH_API_HOST/api/v1"
