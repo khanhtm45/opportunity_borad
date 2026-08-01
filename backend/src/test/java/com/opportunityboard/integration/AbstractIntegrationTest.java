@@ -8,8 +8,10 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.junit.jupiter.api.BeforeEach;
 
 import com.opportunityboard.domain.entity.User;
 import com.opportunityboard.domain.enums.UserRole;
@@ -41,18 +43,30 @@ public abstract class AbstractIntegrationTest {
     protected CurrentUser currentUser;
     @Autowired
     protected TransactionTemplate transactionTemplate;
+    @Autowired
+    protected JdbcTemplate jdbcTemplate;
+
+    /**
+     * Reset toàn bộ dữ liệu test trước mỗi test method.
+     * Test profile chạy trên Supabase THẬT (không có Testcontainers trên CI),
+     * nên các test class share cùng DB — phải xoá sạch để test độc lập,
+     * tránh vi phạm FK (applications/apportunities tham chiếu user).
+     * Giữ nguyên bảng categories (đã seed sẵn 7 category).
+     */
+    @BeforeEach
+    void resetDatabase() {
+        List<String> tables = jdbcTemplate.queryForList(
+                "SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename <> 'categories'",
+                String.class);
+        if (!tables.isEmpty()) {
+            jdbcTemplate.execute("TRUNCATE " + String.join(", ", tables) + " RESTART IDENTITY CASCADE");
+        }
+    }
 
     /** Xoá user (nếu tồn tại) để test idempotent trên cùng DB. */
     protected void cleanupUser(String email) {
         transactionTemplate.executeWithoutResult(status -> {
-            userRepository.findByEmail(email).ifPresent(u -> {
-                // xoá opportunity + org sở hữu để tránh FK
-                organizationRepository.findByOwnerUserUserId(u.getUserId()).forEach(org -> {
-                    opportunityRepository.deleteByOrgOrgId(org.getOrgId());
-                    organizationRepository.delete(org);
-                });
-                userRepository.delete(u);
-            });
+            userRepository.findByEmail(email).ifPresent(userRepository::delete);
         });
     }
 

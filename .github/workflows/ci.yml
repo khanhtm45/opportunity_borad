@@ -1,40 +1,96 @@
-name: ci-min
+name: CI — Build, Test, SonarCloud & Auto-merge
+
 on:
   push:
     branches: [main, ci/setup-pipeline]
   pull_request:
     branches: [main]
+
+# Quyền tối thiểu để tự tạo PR và tự merge vào main
 permissions:
   contents: write
   pull-requests: write
+
 jobs:
   backend-test:
+    name: Backend (Maven + JaCoCo)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "21"
           cache: maven
-      - name: Build & run tests
+
+      - name: Build & run tests (JaCoCo report)
         working-directory: backend
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: mvn -B verify
+
+      - name: SonarCloud scan
+        # Chỉ chạy khi repo đã cấu hình secret SONAR_TOKEN (tránh fail khi chưa có)
+        if: ${{ secrets.SONAR_TOKEN != '' }}
+        working-directory: backend
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: mvn -B sonar:sonar -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }} -Dsonar.organization=${{ secrets.SONAR_ORG }} -Dsonar.host.url=https://sonarcloud.io
+
       - name: Upload JaCoCo report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: jacoco-report
           path: backend/target/site/jacoco/
+
   frontend-build:
+    name: Frontend (Vite build)
     runs-on: ubuntu-latest
     steps:
-      - run: echo "frontend placeholder"
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
   auto-merge:
+    name: Auto-create PR & merge into main
     needs: [backend-test, frontend-build]
+    # Chỉ kích hoạt khi push lên nhánh ci/setup-pipeline
     if: github.ref == 'refs/heads/ci/setup-pipeline' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
-      - run: echo "auto-merge placeholder"
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create PR (if not exists) and enable auto-merge
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          gh pr create \
+            --base main \
+            --head ci/setup-pipeline \
+            --title "CI: pipeline tests + SonarCloud scan" \
+            --body "Tự động thiết lập CI: build/test backend (Maven + JaCoCo), build frontend, scan SonarCloud (khi có token), và auto-merge vào main khi tất cả job xanh." \
+            2>/dev/null || echo "PR đã tồn tại, bỏ qua bước tạo."
+
+          # Bật auto-merge (GitHub sẽ merge khi checks xanh & thỏa branch protection)
+          gh pr merge ci/setup-pipeline --auto --squash --delete-branch
