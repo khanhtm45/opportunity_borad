@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import api from '../api/client.js'
 import { useAuth } from '../context/AuthContext.jsx'
 import { CATEGORY_LABELS, CATEGORY_STYLES } from '../lib/constants.js'
-import NetworkBg from '../components/NetworkBg.jsx'
 import { InlineLoader } from '../components/Splash.jsx'
 
 const FEATURE_BOXES = [
@@ -23,18 +22,33 @@ export default function HomePage() {
 
   return (
     <div className="space-y-8">
-      {/* Banner (mẫu 2: Header / Banner) */}
-      <NetworkBg className="overflow-hidden rounded-3xl p-10 text-white shadow-card" overlay="bg-slate-950/10">
-        <h1 className="text-3xl font-extrabold drop-shadow md:text-4xl">Opportunity Board</h1>
-        <p className="mt-3 max-w-2xl text-white/90">
-          Bảng tin cơ hội sinh viên — nơi hội tụ thực tập, hackathon, học bổng và khởi nghiệp.
-          Khám phá, lưu và ứng tuyển chỉ với vài cú click.
-        </p>
-        <div className="mt-5 flex flex-wrap gap-3">
-          <Link to="/board" className="btn-primary">Khám phá cơ hội →</Link>
-          {!user && <Link to="/register" className="btn-ghost bg-white/90">Tạo tài khoản</Link>}
+      {/* Banner (khớp thiết kế: nền sáng, graphic OB bên phải) */}
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-50 via-white to-accent-50 p-8 shadow-card md:p-12">
+        {/* nền mạng lưới mờ */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.18]"
+          style={{ backgroundImage: "url('/ob-network.svg')", backgroundSize: 'cover', backgroundPosition: 'center' }}
+        />
+        <div className="relative grid items-center gap-8 md:grid-cols-2">
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-800 md:text-4xl">
+              Opportunity Board
+            </h1>
+            <p className="mt-3 max-w-xl text-slate-600">
+              Bảng tin cơ hội sinh viên — nơi hội tụ thực tập, hackathon, học bổng và khởi nghiệp.
+              Khám phá, lưu và ứng tuyển chỉ với vài cú click.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link to="/board" className="btn-primary">Khám phá cơ hội →</Link>
+              {!user && <Link to="/register" className="btn-ghost">Tạo tài khoản</Link>}
+            </div>
+          </div>
+          {/* Graphic OB gradient */}
+          <div className="hidden justify-center md:flex">
+            <img src="/ob-logo.svg" alt="Opportunity Board" className="w-64 drop-shadow-xl" />
+          </div>
         </div>
-      </NetworkBg>
+      </section>
 
       {/* Intro Text Area */}
       <section className="mx-auto max-w-3xl text-center">
@@ -62,7 +76,12 @@ export default function HomePage() {
           <Link to="/board" className="text-sm text-brand-600 hover:underline">Xem tất cả →</Link>
         </div>
         {loading ? <InlineLoader /> : featured.length === 0 ? (
-          <p className="py-8 text-center text-sm text-slate-400">Chưa có cơ hội nổi bật.</p>
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-brand-200 bg-brand-50/40 py-12 text-center">
+            <svg className="mb-3 h-12 w-12 text-brand-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.75 7.5h16.5M3.75 7.5l.867-2.357A2.25 2.25 0 016.622 3h10.756a2.25 2.25 0 011.005 1.143L20.25 7.5" />
+            </svg>
+            <p className="text-sm text-slate-400">Chưa có cơ hội nổi bật.</p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {featured.slice(0, 6).map((o) => (
