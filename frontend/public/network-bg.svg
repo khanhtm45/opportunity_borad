@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="42%" r="78%">
+      <stop offset="0%" stop-color="#0ea5e9"/>
+      <stop offset="40%" stop-color="#0b4f9e"/>
+      <stop offset="100%" stop-color="#061a3a"/>
+    </radialGradient>
+    <linearGradient id="line" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#bfe6ff" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#7dd3fc" stop-opacity="0.08"/>
+    </linearGradient>
+    <radialGradient id="glowW" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowB" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#38bdf8" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowO" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#f69022" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#f69022" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft"><feGaussianBlur stdDeviation="1.1"/></filter>
+    <filter id="bokeh"><feGaussianBlur stdDeviation="6"/></filter>
+  </defs>
+
+  <rect width="1200" height="800" fill="url(#bg)"/>
+
+  <!-- connection lines (static web) -->
+  <g stroke="url(#line)" stroke-width="1" filter="url(#soft)">
+    <line x1="180" y1="140" x2="360" y2="240"/>
+    <line x1="360" y1="240" x2="300" y2="420"/>
+    <line x1="360" y1="240" x2="560" y2="180"/>
+    <line x1="560" y1="180" x2="720" y2="300"/>
+    <line x1="720" y1="300" x2="640" y2="470"/>
+    <line x1="720" y1="300" x2="900" y2="240"/>
+    <line x1="900" y1="240" x2="1020" y2="380"/>
+    <line x1="640" y1="470" x2="500" y2="600"/>
+    <line x1="640" y1="470" x2="820" y2="560"/>
+    <line x1="300" y1="420" x2="180" y2="560"/>
+    <line x1="500" y1="600" x2="420" y2="720"/>
+    <line x1="820" y1="560" x2="960" y2="650"/>
+    <line x1="1020" y1="380" x2="1100" y2="520"/>
+    <line x1="180" y1="140" x2="300" y2="60"/>
+    <line x1="900" y1="240" x2="1040" y2="160"/>
+    <line x1="1100" y1="520" x2="1040" y2="660"/>
+    <line x1="420" y1="720" x2="600" y2="760"/>
+    <line x1="560" y1="180" x2="440" y2="120"/>
+    <line x1="960" y1="650" x2="900" y2="740"/>
+  </g>
+
+  <!-- drifting node cluster (whole group slowly floats) -->
+  <g>
+    <animateTransform attributeName="transform" type="translate" values="0 0; 14 -10; 0 0" dur="14s" repeatCount="indefinite"/>
+    <!-- sharp nodes (center, in focus) -->
+    <circle cx="180" cy="140" r="5" fill="url(#glowW)"/>
+    <circle cx="360" cy="240" r="7" fill="url(#glowW)"><animate attributeName="r" values="7;9;7" dur="3s" repeatCount="indefinite"/></circle>
+    <circle cx="300" cy="420" r="5" fill="url(#glowB)"/>
+    <circle cx="560" cy="180" r="6" fill="url(#glowW)"/>
+    <circle cx="720" cy="300" r="8" fill="url(#glowW)"><animate attributeName="r" values="8;11;8" dur="4s" repeatCount="indefinite"/></circle>
+    <circle cx="640" cy="470" r="6" fill="url(#glowB)"/>
+    <circle cx="900" cy="240" r="7" fill="url(#glowW)"><animate attributeName="r" values="7;9;7" dur="3.5s" repeatCount="indefinite"/></circle>
+    <circle cx="1020" cy="380" r="5" fill="url(#glowB)"/>
+    <circle cx="500" cy="600" r="6" fill="url(#glowW)"/>
+    <circle cx="820" cy="560" r="7" fill="url(#glowB)"/>
+    <circle cx="1040" cy="160" r="5" fill="url(#glowW)"/>
+    <!-- orange accent sparks -->
+    <circle cx="900" cy="240" r="4" fill="url(#glowO)"><animate attributeName="opacity" values="0.5;1;0.5" dur="2.5s" repeatCount="indefinite"/></circle>
+    <circle cx="640" cy="470" r="3" fill="url(#glowO)"><animate attributeName="opacity" values="0.5;1;0.5" dur="3s" repeatCount="indefinite"/></circle>
+    <circle cx="360" cy="240" r="3" fill="url(#glowO)"><animate attributeName="opacity" values="0.5;1;0.5" dur="2.8s" repeatCount="indefinite"/></circle>
+    <circle cx="1020" cy="380" r="3" fill="url(#glowO)"><animate attributeName="opacity" values="0.5;1;0.5" dur="3.2s" repeatCount="indefinite"/></circle>
+  </g>
+
+  <!-- second slower drift (counter phase) -->
+  <g opacity="0.9">
+    <animateTransform attributeName="transform" type="translate" values="0 0; -10 8; 0 0" dur="18s" repeatCount="indefinite"/>
+    <circle cx="440" cy="120" r="4" fill="url(#glowW)"/>
+    <circle cx="1040" cy="660" r="5" fill="url(#glowB)"/>
+    <circle cx="420" cy="720" r="4" fill="url(#glowW)"/>
+    <circle cx="600" cy="760" r="5" fill="url(#glowB)"/>
+    <circle cx="900" cy="740" r="4" fill="url(#glowW)"/>
+  </g>
+
+  <!-- bokeh / out of focus (foreground + background edges) -->
+  <g filter="url(#bokeh)" opacity="0.85">
+    <circle cx="120" cy="700" r="26" fill="url(#glowB)"><animate attributeName="r" values="26;32;26" dur="9s" repeatCount="indefinite"/></circle>
+    <circle cx="240" cy="760" r="18" fill="url(#glowW)"/>
+    <circle cx="60" cy="640" r="14" fill="url(#glowW)"/>
+    <circle cx="1120" cy="80" r="30" fill="url(#glowB)"><animate attributeName="r" values="30;38;30" dur="11s" repeatCount="indefinite"/></circle>
+    <circle cx="1060" cy="40" r="20" fill="url(#glowW)"/>
+    <circle cx="1160" cy="140" r="16" fill="url(#glowW)"/>
+    <circle cx="1080" cy="680" r="22" fill="url(#glowB)"/>
+    <circle cx="960" cy="740" r="16" fill="url(#glowO)"><animate attributeName="opacity" values="0.6;1;0.6" dur="4s" repeatCount="indefinite"/></circle>
+  </g>
+</svg>

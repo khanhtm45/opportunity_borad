@@ -1,0 +1,46 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: opportunity-board-backend
+  datasource:
+    url: jdbc:postgresql://aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres?sslmode=require&prepareThreshold=0&preparedStatementCacheSize=0&defaultRowFetchSize=50&stringtype=unspecified
+    username: postgres.cmmypmpxisysrnqoqfdv
+    password: ${DB_PASSWORD:KhanhMinh0@}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate   # schema đã tạo trên Supabase; Flyway quản lý
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    # Schema đã tạo thủ công trên Supabase PostgreSQL 17 (Flyway 10.10 chưa hỗ trợ PG17).
+    # Quản lý schema bằng docs/db/schema.sql. Tắt auto-run để tránh lỗi "Unsupported Database".
+    enabled: false
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 1
+  mail:
+    host: smtp.example.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:change-me-in-production-32bytes-min!!}
+    expiration-ms: 900000        # 15 phút
+    refresh-ms: 1209600000        # 14 ngày
+
+logging:
+  level:
+    com.opportunityboard: INFO

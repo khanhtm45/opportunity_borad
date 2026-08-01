@@ -1,0 +1,29 @@
+# Test profile — chạy integration test.
+# Mặc định dùng Supabase (đã có schema chạy sẵn) để không phụ thuộc Docker.
+# Nếu muốn isolation hoàn toàn, bật Docker + Testcontainers (xem AbstractIntegrationTest).
+spring:
+  datasource:
+    url: jdbc:postgresql://aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres?sslmode=require&prepareThreshold=0&preparedStatementCacheSize=0&stringtype=unspecified
+    username: postgres.cmmypmpxisysrnqoqfdv
+    password: ${DB_PASSWORD:KhanhMinh0@}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+  flyway:
+    enabled: false
+  mail:
+    host: localhost
+    port: 25
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:test-secret-test-secret-test-secret-test-secret!!}
+    expiration-ms: 900000
+    refresh-ms: 1209600000
+
+logging:
+  level:
+    com.opportunityboard: WARN
+    org.springframework: WARN
