@@ -6,8 +6,8 @@ spring:
   application:
     name: opportunity-board-backend
   datasource:
-    url: jdbc:postgresql://aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres?sslmode=require&prepareThreshold=0&preparedStatementCacheSize=0&defaultRowFetchSize=50&stringtype=unspecified
-    username: postgres.cmmypmpxisysrnqoqfdv
+    url: ${DB_URL:jdbc:postgresql://aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres?sslmode=require&prepareThreshold=0&preparedStatementCacheSize=0&defaultRowFetchSize=50&stringtype=unspecified}
+    username: ${DB_USERNAME:postgres.cmmypmpxisysrnqoqfdv}
     password: ${DB_PASSWORD:KhanhMinh0@}
     driver-class-name: org.postgresql.Driver
   jpa:
@@ -25,10 +25,10 @@ spring:
     baseline-on-migrate: true
     baseline-version: 1
   mail:
-    host: smtp.example.com
-    port: 587
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
+    host: ${MAIL_HOST:smtp.example.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
