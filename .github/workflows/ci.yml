@@ -82,11 +82,12 @@ jobs:
             exit 0
           fi
           # projectKey & organization là public identifier (không phải secret) nên hardcode ở đây
+          # Không dùng -Dsonar.qualitygate.wait=true để tránh lỗi quyền đọc QG từ CI token;
+          # kết quả scan vẫn hiển thị đầy đủ trên dashboard SonarCloud.
           mvn -B sonar:sonar \
             -Dsonar.projectKey=opportunity_board_ci \
             -Dsonar.organization=khanhtm45 \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.qualitygate.wait=true
+            -Dsonar.host.url=https://sonarcloud.io
 
   auto-merge:
     name: Auto-merge CI branch into main
