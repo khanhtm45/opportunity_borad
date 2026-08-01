@@ -81,9 +81,10 @@ jobs:
             echo "Để kích hoạt: vào repo Settings > Secrets > đặt SONAR_TOKEN = token thật từ SonarCloud."
             exit 0
           fi
+          # projectKey & organization là public identifier (không phải secret) nên hardcode ở đây
           mvn -B sonar:sonar \
-            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }} \
-            -Dsonar.organization=${{ secrets.SONAR_ORG }} \
+            -Dsonar.projectKey=opportunity_board_ci \
+            -Dsonar.organization=khanhtm45 \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.qualitygate.wait=true
 
