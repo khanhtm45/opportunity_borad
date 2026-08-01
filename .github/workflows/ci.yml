@@ -5,9 +5,20 @@ on:
   pull_request:
     branches: [main]
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
 jobs:
-  hi:
+  backend-test:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "hello from ci-min with full on"
+      - run: echo "backend placeholder"
+  frontend-build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "frontend placeholder"
+  auto-merge:
+    needs: [backend-test, frontend-build]
+    if: github.ref == 'refs/heads/ci/setup-pipeline' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "auto-merge placeholder"
