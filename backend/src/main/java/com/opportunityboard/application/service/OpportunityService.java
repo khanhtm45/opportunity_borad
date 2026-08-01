@@ -48,10 +48,11 @@ public class OpportunityService {
                 ? o.getLogoUrl() : o.getOrg().getLogoUrl();
         return new OpportunityResponse(
                 o.getOppId(), o.getTitle(), o.getSlug(),
-                o.getOrg().getOrgName(), logo,
+                o.getOrg().getOrgName(), logo, o.getBannerUrl(),
                 o.getCategory().getCode(), displayStatusOf(o),
                 o.getDeadline(), o.getWorkType(), o.getLocation(),
-                o.isFeatured(), o.getViewCount(), o.getBookmarkCount(), o.getApplicationCount());
+                o.isFeatured(), o.getViewCount(), o.getBookmarkCount(),
+                o.getApplicationCount(), o.getShareCount());
     }
 
     // -------- F05: PROVIDER LIST OWN --------
@@ -126,12 +127,50 @@ public class OpportunityService {
                 ? o.getLogoUrl() : o.getOrg().getLogoUrl();
         return new OpportunityDetailResponse(
                 o.getOppId(), o.getOrg().getOrgId(), o.getTitle(), o.getSlug(),
-                o.getOrg().getOrgName(), detailLogo, o.getOrg().getDescription(),
+                o.getOrg().getOrgName(), detailLogo, o.getBannerUrl(),
+                o.getOrg().getDescription(), o.getOrg().getWebsite(),
+                o.getOrg().getContactEmail(), o.getOrg().getContactPhone(),
                 o.getCategory().getCode(), o.getCategory().getCategoryName(),
                 o.getDescription(), o.getRequirements(), o.getBenefits(),
+                o.getSalaryOrReward(), o.getSelectionProcess(),
                 o.getLocation(), o.getWorkType(), o.getApplyMode(), o.getExternalLink(),
                 o.getDeadline(), o.getStatus(), o.getPublishedAt(), o.isFeatured(),
-                o.getViewCount(), o.getBookmarkCount(), o.getApplicationCount(), domainIds, related);
+                o.getViewCount(), o.getBookmarkCount(), o.getApplicationCount(),
+                o.getShareCount(), domainIds, related);
+    }
+
+    /** F04.3: tăng share_count, trả URL công khai để FE copy/share. */
+    @Transactional
+    public java.util.Map<String, Object> share(UUID oppId) {
+        Opportunity o = opportunityRepository.findById(oppId)
+                .orElseThrow(() -> new NotFoundException("Opportunity không tồn tại"));
+        if (o.getStatus() != OppStatus.APPROVED) throw new NotFoundException("Opportunity chưa công khai");
+        o.setShareCount(o.getShareCount() + 1);
+        opportunityRepository.save(o);
+        return java.util.Map.of(
+                "oppId", o.getOppId(),
+                "slug", o.getSlug(),
+                "shareCount", o.getShareCount());
+    }
+
+    /** Tracking click link ngoài (EXTERNAL apply). */
+    @Transactional
+    public void externalClick(UUID oppId) {
+        Opportunity o = opportunityRepository.findById(oppId)
+                .orElseThrow(() -> new NotFoundException("Opportunity không tồn tại"));
+        if (o.getStatus() != OppStatus.APPROVED) throw new NotFoundException("Opportunity chưa công khai");
+        o.setViewCount(o.getViewCount() + 1);
+        opportunityRepository.save(o);
+    }
+
+    /** Explicit view bump (khi FE chỉ cần ping, không load full detail). */
+    @Transactional
+    public void recordView(UUID oppId) {
+        Opportunity o = opportunityRepository.findById(oppId)
+                .orElseThrow(() -> new NotFoundException("Opportunity không tồn tại"));
+        if (o.getStatus() != OppStatus.APPROVED) throw new NotFoundException("Opportunity chưa công khai");
+        o.setViewCount(o.getViewCount() + 1);
+        opportunityRepository.save(o);
     }
 
     // -------- F05.1: PROVIDER CREATE (DRAFT) --------
@@ -151,9 +190,12 @@ public class OpportunityService {
         Opportunity o = Opportunity.builder()
                 .org(org).createdBy(user).category(cat)
                 .title(req.title()).description(req.description()).requirements(req.requirements())
-                .benefits(req.benefits()).location(req.location()).workType(req.workType())
+                .benefits(req.benefits())
+                .salaryOrReward(req.salaryOrReward()).selectionProcess(req.selectionProcess())
+                .location(req.location()).workType(req.workType())
                 .applyMode(req.applyMode()).externalLink(req.externalLink()).internalForm(req.internalForm())
-                .logoUrl(req.logoUrl()).deadline(req.deadline()).status(OppStatus.DRAFT)
+                .logoUrl(req.logoUrl()).bannerUrl(req.bannerUrl())
+                .deadline(req.deadline()).status(OppStatus.DRAFT)
                 .slug(slugify(req.title())).build();
         o = opportunityRepository.save(o);
         // gán domains vào bảng join opportunity_domains
@@ -186,9 +228,12 @@ public class OpportunityService {
             throw new ConflictException("Chỉ sửa được khi DRAFT hoặc HIDDEN");
         o.setTitle(req.title()); o.setDescription(req.description());
         o.setRequirements(req.requirements()); o.setBenefits(req.benefits());
+        o.setSalaryOrReward(req.salaryOrReward()); o.setSelectionProcess(req.selectionProcess());
         o.setLocation(req.location()); o.setWorkType(req.workType());
         o.setApplyMode(req.applyMode()); o.setExternalLink(req.externalLink());
-        o.setInternalForm(req.internalForm()); o.setLogoUrl(req.logoUrl()); o.setDeadline(req.deadline());
+        o.setInternalForm(req.internalForm());
+        o.setLogoUrl(req.logoUrl()); o.setBannerUrl(req.bannerUrl());
+        o.setDeadline(req.deadline());
         opportunityRepository.save(o);
     }
 

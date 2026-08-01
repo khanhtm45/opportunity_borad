@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "filesystem-safe": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "."],
+      "env": {
+        "API_TOKEN": "${MCP_API_TOKEN}"
+      }
+    }
+  }
+}

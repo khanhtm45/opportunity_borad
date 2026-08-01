@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext.jsx'
 import { studentApi } from '../api/student.js'
 import { InlineLoader } from '../components/Splash.jsx'
 import { APP_STATUS_LABELS, APP_STATUS_STYLES, fmtDate } from '../lib/constants.js'
+import { asset } from '../lib/assets.js'
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -38,7 +39,7 @@ export default function DashboardPage() {
       {/* Sidebar nav trái (mẫu 3) */}
       <aside className="hidden w-56 shrink-0 md:block">
         <div className="sticky top-20 space-y-1">
-          <div className="mb-3 flex items-center gap-2 rounded-2xl bg-brand-gradient px-4 py-3 text-white shadow-card">
+          <div className="mb-3 flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-white shadow-card">
             <span className="text-lg font-extrabold">{user.fullName || user.email}</span>
           </div>
           {menu.map(([k, v]) => (
@@ -56,7 +57,7 @@ export default function DashboardPage() {
       {/* Body lớn */}
       <div className="min-w-0 flex-1 space-y-4">
         {/* Banner phải */}
-        <div className="overflow-hidden rounded-3xl bg-cover bg-center p-6 text-white shadow-card" style={{ backgroundImage: 'url(/network-bg.svg)' }}>
+        <div className="overflow-hidden rounded-3xl bg-slate-900 bg-cover bg-center p-6 text-white shadow-card" style={{ backgroundImage: `url(${asset('ob-network.svg')})` }}>
           <h1 className="text-xl font-extrabold drop-shadow md:text-2xl">Quản lý cá nhân</h1>
           <p className="mt-1 text-sm text-white/85">Theo dõi đơn ứng tuyển, cơ hội đã lưu và thông báo.</p>
         </div>

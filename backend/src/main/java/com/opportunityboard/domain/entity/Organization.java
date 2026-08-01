@@ -23,6 +23,8 @@ public class Organization {
 
     private String logoUrl;
     private String website;
+    private String contactEmail;
+    private String contactPhone;
 
     @Column(columnDefinition = "text")
     private String description;

@@ -1,0 +1,13 @@
+---
+description: Spring Boot backend conventions for Opportunity Board API
+globs: backend/**/*
+alwaysApply: false
+---
+
+# Backend rules
+
+- Keep packages under `com.opportunityboard`; follow existing controller → service → repository flow.
+- API paths stay under `/api/v1`. Do not break JWT auth filters in `SecurityConfig`.
+- Config secrets via env: `DB_PASSWORD`, `JWT_SECRET`, optional `DB_URL` / `MAIL_*`.
+- Tests: prefer `mvn -B verify`; do not disable JaCoCo/Sonar wiring without asking.
+- Dockerfile builds fat JAR; App Platform health check uses `/api/v1/categories`.

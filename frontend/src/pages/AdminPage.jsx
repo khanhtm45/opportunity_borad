@@ -3,6 +3,7 @@ import { adminApi } from '../api/admin.js'
 import { useAuth } from '../context/AuthContext.jsx'
 import { InlineLoader } from '../components/Splash.jsx'
 import { OPP_STATUS_STYLES, STATUS_LABELS, APP_STATUS_LABELS, APP_STATUS_STYLES } from '../lib/constants.js'
+import { asset } from '../lib/assets.js'
 
 function StatCard({ label, value, hint, tone }) {
   const tones = {
@@ -75,7 +76,7 @@ export default function AdminPage() {
       {/* Sidebar */}
       <aside className="hidden w-56 shrink-0 md:block">
         <div className="sticky top-20 space-y-1">
-          <div className="mb-4 flex items-center justify-between rounded-2xl bg-cover bg-center px-4 py-3 text-white shadow-card" style={{ backgroundImage: 'url(/network-bg.svg)' }}>
+          <div className="mb-4 flex items-center justify-between rounded-2xl bg-slate-900 bg-cover bg-center px-4 py-3 text-white shadow-card" style={{ backgroundImage: `url(${asset('ob-network.svg')})` }}>
             <span className="text-lg font-extrabold drop-shadow">Admin Panel</span>
           </div>
           {menu.map(([k, v]) => (

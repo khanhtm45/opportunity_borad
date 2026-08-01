@@ -1,15 +1,36 @@
-# DigitalOcean App Platform — BE Spring Boot
-# Tạo app: https://cloud.digitalocean.com/apps → Create App → GitHub
-#   repo: khanhtm45/opportunity_borad, branch: main
-#   hoặc: doctl apps create --spec .do/app.yaml
+# DigitalOcean App Platform — BE (Docker) + FE (static)
+# Create/update: doctl apps create --spec .do/app.yaml
+# hoặc sync trên UI theo các field bên dưới.
 #
-# Sau khi có URL (vd https://opportunity-board-xxxx.ondigitalocean.app):
-#   GitHub → Settings → Variables → VITE_API_URL =
-#   https://opportunity-board-xxxx.ondigitalocean.app/api/v1
-# rồi re-run workflow Deploy (Pages) để FE trỏ đúng API.
+# FE trên DO: Source Directory = frontend
+# Build Command = npm run build:do
+# Output Directory = dist
+# Env: VITE_BASE_PATH=/  và VITE_API_URL=https://<api-host>/api/v1
 
 name: opportunity-board
 region: sgp
+
+static_sites:
+  - name: frontend
+    github:
+      repo: khanhtm45/opportunity_borad
+      branch: main
+      deploy_on_push: true
+    source_dir: frontend
+    build_command: npm run build:do
+    output_dir: dist
+    catchall_document: index.html
+    envs:
+      - key: VITE_BASE_PATH
+        scope: BUILD_TIME
+        value: "/"
+      - key: VITE_API_URL
+        scope: BUILD_TIME
+        # Bind tới URL component api (điền tay trên UI nếu binding lỗi)
+        value: ${api.PUBLIC_URL}/api/v1
+      - key: NPM_CONFIG_PRODUCTION
+        scope: BUILD_TIME
+        value: "false"
 
 services:
   - name: api

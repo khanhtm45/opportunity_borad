@@ -13,12 +13,14 @@ export const WORKTYPE_LABELS = {
   OFFLINE: 'Offline',
   HYBRID: 'Hybrid',
 }
+// Khớp backend LocationType enum
 export const LOCATION_LABELS = {
+  HA_NOI: 'Hà Nội',
+  TP_HCM: 'TP.HCM',
+  DA_NANG: 'Đà Nẵng',
   TOAN_QUOC: 'Toàn quốc',
-  MIEN_BAC: 'Miền Bắc',
-  MIEN_TRUNG: 'Miền Trung',
-  MIEN_NAM: 'Miền Nam',
   QUOC_TE: 'Quốc tế',
+  KHAC: 'Khác',
 }
 export const STATUS_LABELS = {
   // display status (board)

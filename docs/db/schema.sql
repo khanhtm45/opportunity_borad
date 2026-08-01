@@ -74,6 +74,8 @@ CREATE TABLE organizations (
     org_name        VARCHAR(200) NOT NULL,
     logo_url        VARCHAR(512),
     website         VARCHAR(255),
+    contact_email   VARCHAR(255),                        -- F03 liên hệ
+    contact_phone   VARCHAR(40),
     description     TEXT,
     verified_status org_verified NOT NULL DEFAULT 'PENDING',
     verified_at     TIMESTAMP,
@@ -135,9 +137,12 @@ CREATE TABLE opportunities (
     title            VARCHAR(200) NOT NULL,
     slug             VARCHAR(220) NOT NULL UNIQUE,
     logo_url         VARCHAR(512),                       -- logo riêng cơ hội (ưu tiên org.logo_url)
+    banner_url       VARCHAR(512),                       -- banner card / hero (F01/F03)
     description      TEXT NOT NULL,                       -- đã SANITIZE (chống XSS)
     requirements     TEXT,
     benefits         TEXT,
+    salary_or_reward TEXT,                               -- lương / giải thưởng (F03)
+    selection_process TEXT,                              -- quy trình tuyển chọn (F03)
     location         location_type NOT NULL DEFAULT 'TOAN_QUOC',
     work_type        work_type NOT NULL DEFAULT 'OFFLINE',
     apply_mode       apply_mode NOT NULL,                 -- INTERNAL | EXTERNAL
@@ -155,6 +160,7 @@ CREATE TABLE opportunities (
     view_count       INT NOT NULL DEFAULT 0,
     bookmark_count   INT NOT NULL DEFAULT 0,
     application_count INT NOT NULL DEFAULT 0,
+    share_count      INT NOT NULL DEFAULT 0,              -- F04.3
     published_at     TIMESTAMP,
     created_at       TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at       TIMESTAMP NOT NULL DEFAULT NOW(),

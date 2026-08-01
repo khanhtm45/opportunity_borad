@@ -65,13 +65,15 @@ public class SavedOpportunityService {
 
     private OpportunityResponse toResponse(SavedOpportunity s) {
         Opportunity o = s.getOpportunity();
+        String logo = o.getLogoUrl() != null && !o.getLogoUrl().isBlank()
+                ? o.getLogoUrl() : o.getOrg().getLogoUrl();
         return new OpportunityResponse(
                 o.getOppId(), o.getTitle(), o.getSlug(),
-                o.getOrg().getOrgName(), o.getOrg().getLogoUrl(),
+                o.getOrg().getOrgName(), logo, o.getBannerUrl(),
                 o.getCategory().getCode(), null,
                 o.getDeadline(), o.getWorkType(),
                 o.getLocation(), o.isFeatured(),
                 o.getViewCount(), o.getBookmarkCount(),
-                o.getApplicationCount());
+                o.getApplicationCount(), o.getShareCount());
     }
 }
