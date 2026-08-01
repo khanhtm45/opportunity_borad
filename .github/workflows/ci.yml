@@ -1,9 +1,13 @@
 name: ci-min
-on: [push]
+on:
+  push:
+    branches: [main, ci/setup-pipeline]
+  pull_request:
+    branches: [main]
 permissions:
   contents: read
 jobs:
   hi:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "hello from ci-min"
+      - run: echo "hello from ci-min with full on"
