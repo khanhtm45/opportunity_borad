@@ -3,19 +3,21 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "postbuild": "node --input-type=module -e \"import { copyFileSync } from 'fs'; copyFileSync('dist/index.html', 'dist/404.html')\"",
+    "postbuild": "node scripts/copy-404.mjs",
+    "build:do": "npm install --include=dev && npm run build",
     "preview": "vite preview"
   },
   "dependencies": {
     "axios": "^1.7.7",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.26.2"
-  },
-  "devDependencies": {
+    "react-router-dom": "^6.26.2",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.47",
