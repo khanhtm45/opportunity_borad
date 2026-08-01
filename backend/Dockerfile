@@ -12,4 +12,5 @@ WORKDIR /app
 COPY --from=build /app/target/app.jar app.jar
 ENV PORT=8080
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# CMD (not only ENTRYPOINT) so App Platform detects a default process
+CMD ["java", "-jar", "app.jar"]

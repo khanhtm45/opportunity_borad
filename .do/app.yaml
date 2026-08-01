@@ -1,13 +1,13 @@
-# DigitalOcean App Platform — BE + FE (cùng repo, cùng branch main)
+# DigitalOcean — BE + FE cùng main
 #
-# Cách khuyến nghị (ổn định nhất): FE dùng Dockerfile (nginx)
-# - Component frontend: Dockerfile path = frontend/Dockerfile
-# - HTTP port = 8080
-# - Build-time env:
-#     VITE_BASE_PATH=/
-#     VITE_API_URL=https://<your-api-component>.ondigitalocean.app/api/v1
-#
-# Không dùng ${api.PUBLIC_URL} nếu FE và API là 2 App riêng — binding sẽ fail.
+# QUAN TRỌNG trên UI (component FE):
+# - Type = Web Service (Docker), KHÔNG phải Static Site / Node
+# - Source Directory = frontend
+# - Dockerfile path = Dockerfile   ← relative to source_dir (đừng ghi frontend/Dockerfile)
+# - HTTP Port = 8080
+# - Run Command = (để trống — dùng ENTRYPOINT image) hoặc:
+#     /docker-entrypoint-ob.sh
+# - Env BUILD_TIME: VITE_BASE_PATH=/  và VITE_API_URL=https://<api-host>/api/v1
 
 name: opportunity-board
 region: sgp
@@ -18,19 +18,21 @@ services:
       repo: khanhtm45/opportunity_borad
       branch: main
       deploy_on_push: true
-    dockerfile_path: backend/Dockerfile
+    source_dir: backend
+    dockerfile_path: Dockerfile
     http_port: 8080
     instance_count: 1
     instance_size_slug: basic-xxs
+    run_command: java -jar app.jar
     routes:
       - path: /api
     health_check:
       http_path: /api/v1/categories
-      initial_delay_seconds: 60
+      initial_delay_seconds: 90
       period_seconds: 20
       timeout_seconds: 10
       success_threshold: 1
-      failure_threshold: 6
+      failure_threshold: 10
     envs:
       - key: PORT
         scope: RUN_TIME
@@ -49,18 +51,21 @@ services:
       repo: khanhtm45/opportunity_borad
       branch: main
       deploy_on_push: true
-    dockerfile_path: frontend/Dockerfile
     source_dir: frontend
+    dockerfile_path: Dockerfile
     http_port: 8080
     instance_count: 1
     instance_size_slug: basic-xxs
+    run_command: /docker-entrypoint-ob.sh
     routes:
       - path: /
     envs:
+      - key: PORT
+        scope: RUN_TIME
+        value: "8080"
       - key: VITE_BASE_PATH
         scope: BUILD_TIME
         value: "/"
       - key: VITE_API_URL
         scope: BUILD_TIME
-        # Điền URL API thật trên UI DO (không dùng binding nếu App FE tách riêng)
         value: "https://REPLACE_WITH_API_HOST/api/v1"
