@@ -203,6 +203,10 @@
 | POST | `/admin/users/:id/ai-scan-org` | **Lớp 1** — AI quét org theo owner userId | Admin |
 | POST | `/admin/opportunities/:id/ai-scan` | **Lớp 2** — AI quét hồ sơ tin đăng (chương trình/ủy quyền) | Admin |
 | GET  | `/admin/opportunities/:id/documents` | Xem hồ sơ liên quan tin chờ duyệt | Admin |
+| GET  | `/admin/applications` | DS đơn SUBMITTED/REVIEWING (hoặc theo `oppId`) | Admin |
+| POST | `/admin/applications/:appId/ai-scan` | **Lớp 3** — AI quét 1 CV/hồ sơ SV | Admin |
+| POST | `/admin/opportunities/:id/applications/ai-scan` | **Lớp 3** — AI quét hàng loạt + nhóm lý do | Admin |
+| POST | `/admin/applications/:appId/request-update` | Gửi lý do yêu cầu SV cập nhật (`APP_UPDATE_REQUIRED`) | Admin |
 
 > Cần `OPENROUTER_API_KEY` / model `google/gemini-3-flash-preview`. **Hai lớp tách biệt:**
 >

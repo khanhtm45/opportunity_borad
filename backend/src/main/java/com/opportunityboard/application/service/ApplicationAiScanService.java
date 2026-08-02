@@ -64,8 +64,8 @@ public class ApplicationAiScanService {
         String c = requireCriteria(criteria);
         Opportunity opp = applicationService.requireOwnerOfOppId(oppId);
 
-        var page = applicationRepository.findByOpportunityOwner(
-                oppId, applicationService.currentUserId(), PageRequest.of(0, BATCH_LIMIT));
+        // Sau khi đã check quyền: lấy theo oppId (Admin không phải org owner).
+        var page = applicationRepository.findByOpportunityOppId(oppId, PageRequest.of(0, BATCH_LIMIT));
         List<Application> apps = page.getContent().stream()
                 .filter(a -> a.getStatus() == AppStatus.SUBMITTED || a.getStatus() == AppStatus.REVIEWING)
                 .collect(Collectors.toList());

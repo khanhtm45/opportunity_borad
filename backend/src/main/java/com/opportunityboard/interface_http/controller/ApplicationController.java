@@ -21,7 +21,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/provider")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('PROVIDER')")
+@PreAuthorize("hasAnyRole('PROVIDER', 'ADMIN')")
 public class ApplicationController {
 
     private final ApplicationService applicationService;

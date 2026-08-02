@@ -15,6 +15,10 @@ public interface ApplicationRepository extends JpaRepository<Application, UUID> 
 
     Page<Application> findByStudentUserId(UUID studentId, Pageable pageable);
 
+    Page<Application> findByStatusIn(java.util.Collection<AppStatus> statuses, Pageable pageable);
+
+    Page<Application> findByOpportunityOppId(UUID oppId, Pageable pageable);
+
     @Query("""
            SELECT a FROM Application a
            JOIN a.opportunity o JOIN o.org org

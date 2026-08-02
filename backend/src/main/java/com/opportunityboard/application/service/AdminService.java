@@ -1,14 +1,19 @@
 package com.opportunityboard.application.service;
 
+import com.opportunityboard.application.dto.application.ApplicationSummaryResponse;
 import com.opportunityboard.common.exception.NotFoundException;
+import com.opportunityboard.domain.entity.Application;
 import com.opportunityboard.domain.entity.Organization;
+import com.opportunityboard.domain.entity.StudentProfile;
 import com.opportunityboard.domain.entity.User;
+import com.opportunityboard.domain.enums.AppStatus;
 import com.opportunityboard.domain.enums.OppStatus;
 import com.opportunityboard.domain.enums.OrgVerified;
 import com.opportunityboard.domain.enums.UserRole;
 import com.opportunityboard.infrastructure.repository.ApplicationRepository;
 import com.opportunityboard.infrastructure.repository.OpportunityRepository;
 import com.opportunityboard.infrastructure.repository.OrganizationRepository;
+import com.opportunityboard.infrastructure.repository.StudentProfileRepository;
 import com.opportunityboard.infrastructure.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +38,7 @@ public class AdminService {
     private final OpportunityRepository opportunityRepository;
     private final OrganizationRepository organizationRepository;
     private final ApplicationRepository applicationRepository;
+    private final StudentProfileRepository studentProfileRepository;
     private final OrgDocumentService orgDocumentService;
 
     public Map<String, Object> listUsers(int page, int size) {
@@ -92,6 +99,54 @@ public class AdminService {
 
         m.put("generated_at", Instant.now().toString());
         return m;
+    }
+
+    /** Hàng đợi / danh sách ứng tuyển cho Admin (mặc định SUBMITTED+REVIEWING). */
+    public Map<String, Object> listApplications(int page, int size, UUID oppId) {
+        Page<Application> p;
+        if (oppId != null) {
+            p = applicationRepository.findByOpportunityOppId(oppId, PageRequest.of(page, size));
+        } else {
+            p = applicationRepository.findByStatusIn(
+                    List.of(AppStatus.SUBMITTED, AppStatus.REVIEWING),
+                    PageRequest.of(page, size));
+        }
+        List<ApplicationSummaryResponse> items = p.getContent().stream()
+                .map(this::toAppSummary)
+                .collect(Collectors.toList());
+        Map<String, Object> out = new HashMap<>();
+        out.put("items", items);
+        out.put("total", p.getTotalElements());
+        return out;
+    }
+
+    private ApplicationSummaryResponse toAppSummary(Application a) {
+        StudentProfile profile = studentProfileRepository
+                .findByUserUserId(a.getStudent().getUserId()).orElse(null);
+        return ApplicationSummaryResponse.builder()
+                .appId(a.getAppId())
+                .oppId(a.getOpportunity().getOppId())
+                .title(a.getOpportunity().getTitle())
+                .slug(a.getOpportunity().getSlug())
+                .orgName(a.getOpportunity().getOrg().getOrgName())
+                .status(a.getStatus())
+                .isExternal(a.isExternal())
+                .cvFile(a.getCvFile())
+                .appliedAt(a.getAppliedAt())
+                .decidedAt(a.getDecidedAt())
+                .studentName(a.getStudent().getFullName())
+                .studentEmail(a.getStudent().getEmail())
+                .coverLetter(a.getCoverLetter())
+                .providerNote(a.getProviderNote())
+                .rejectionReason(a.getRejectionReason())
+                .aiModerationNote(a.getAiModerationNote())
+                .aiScannedAt(a.getAiScannedAt())
+                .screeningCriteria(a.getScreeningCriteria())
+                .major(profile != null ? profile.getMajor() : null)
+                .university(profile != null ? profile.getUniversity() : null)
+                .universityYear(profile != null ? profile.getUniversityYear() : null)
+                .skills(profile != null ? profile.getSkills() : null)
+                .build();
     }
 
     @Transactional

@@ -25,6 +25,21 @@ export const adminApi = {
   // Lớp 2 — hồ sơ tin đăng
   aiScanOpportunity: (oppId, apply = true) =>
     api.post(`/admin/opportunities/${oppId}/ai-scan`, null, { params: { apply } }).then((r) => r.data),
+  // Lớp 3 — hồ sơ ứng tuyển SV
+  applications: (params = {}) =>
+    api.get('/admin/applications', { params }).then((r) => r.data?.items || []),
+  aiScanApps: (oppId, criteria, apply = true) =>
+    api.post(`/admin/opportunities/${oppId}/applications/ai-scan`, { criteria }, {
+      params: { apply },
+      timeout: 180000,
+    }).then((r) => r.data),
+  aiScanApp: (appId, criteria, apply = true) =>
+    api.post(`/admin/applications/${appId}/ai-scan`, { criteria }, {
+      params: { apply },
+      timeout: 120000,
+    }).then((r) => r.data),
+  requestAppUpdate: (appId, reason) =>
+    api.post(`/admin/applications/${appId}/request-update`, { reason }).then((r) => r.data),
   orgDocuments: (orgId) => api.get(`/admin/orgs/${orgId}/documents`).then((r) => r.data || []),
   oppDocuments: (oppId) => api.get(`/admin/opportunities/${oppId}/documents`).then((r) => r.data || []),
   categories: () => api.get('/categories').then((r) => r.data),

@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react'
 import { adminApi } from '../api/admin.js'
 import { useAuth } from '../context/AuthContext.jsx'
 import { InlineLoader } from '../components/Splash.jsx'
-import { OPP_STATUS_STYLES, STATUS_LABELS } from '../lib/constants.js'
+import { APP_STATUS_LABELS, APP_STATUS_STYLES, OPP_STATUS_STYLES, STATUS_LABELS, fmtDate } from '../lib/constants.js'
 import { asset } from '../lib/assets.js'
 
 function StatCard({ label, value, hint, tone }) {
@@ -105,15 +105,22 @@ export default function AdminPage() {
   const [reviewReason, setReviewReason] = useState('')
   const [scanningId, setScanningId] = useState(null)
   const [scanningOppId, setScanningOppId] = useState(null)
+  const [apps, setApps] = useState([])
+  const [appCriteria, setAppCriteria] = useState('')
+  const [appScanOppId, setAppScanOppId] = useState('')
+  const [scanningApps, setScanningApps] = useState(false)
+  const [appScanBatch, setAppScanBatch] = useState(null)
+  const [appReasons, setAppReasons] = useState({})
 
   const loadQueue = useCallback(() => adminApi.moderationQueue().then((r) => setQueue(r || [])), [])
   const loadUsers = useCallback(() => adminApi.users().then((r) => setUsers(r || [])), [])
   const loadAnalytics = useCallback(() => adminApi.analytics().then((r) => setAnalytics(r)).catch(() => null), [])
+  const loadApps = useCallback(() => adminApi.applications().then((r) => setApps(r || [])).catch(() => setApps([])), [])
 
   const refresh = useCallback(() => {
     setLoading(true)
-    Promise.all([loadQueue(), loadUsers(), loadAnalytics()]).finally(() => setLoading(false))
-  }, [loadQueue, loadUsers, loadAnalytics])
+    Promise.all([loadQueue(), loadUsers(), loadAnalytics(), loadApps()]).finally(() => setLoading(false))
+  }, [loadQueue, loadUsers, loadAnalytics, loadApps])
 
   useEffect(() => { if (user?.role === 'ADMIN') refresh(); else setLoading(false) }, [user, refresh])
 
@@ -175,6 +182,37 @@ export default function AdminPage() {
     } catch (e) { setMsg(e.response?.data?.error?.message || 'Lỗi gửi yêu cầu') }
   }
 
+  const runAdminAppScan = async () => {
+    const oppId = (appScanOppId || '').trim()
+    const criteria = (appCriteria || '').trim()
+    if (!oppId) { setMsg('⚠️ Chọn / dán oppId tin cần quét hồ sơ SV'); return }
+    if (criteria.length < 10) { setMsg('⚠️ Nhập tiêu chuẩn screening (≥10 ký tự)'); return }
+    setScanningApps(true)
+    setAppScanBatch(null)
+    setMsg('')
+    try {
+      const batch = await adminApi.aiScanApps(oppId, criteria, true)
+      setAppScanBatch(batch)
+      const reasons = {}
+      ;(batch.results || []).forEach((r) => { reasons[r.appId] = r.moderationNote || r.summary || '' })
+      setAppReasons(reasons)
+      setMsg(`🤖 Đã quét ${batch.scannedCount || 0} hồ sơ SV — Admin xem lại nhóm lý do rồi gửi SV`)
+      loadApps()
+    } catch (e) {
+      setMsg(e.response?.data?.error?.message || 'AI quét hồ sơ SV lỗi')
+    } finally { setScanningApps(false) }
+  }
+
+  const sendAppUpdate = async (appId) => {
+    const reason = (appReasons[appId] || '').trim()
+    if (!reason) { setMsg('⚠️ Nhập lý do trước khi gửi SV'); return }
+    try {
+      await adminApi.requestAppUpdate(appId, reason)
+      setMsg('✅ Đã gửi yêu cầu cập nhật hồ sơ cho sinh viên')
+      loadApps()
+    } catch (e) { setMsg(e.response?.data?.error?.message || 'Lỗi gửi yêu cầu') }
+  }
+
   const a = analytics || {}
   const pendingCount = Number(a.pending ?? queue.length) || 0
 
@@ -198,8 +236,17 @@ export default function AdminPage() {
   const menu = [
     ['dashboard', 'Dashboard'],
     ['queue', 'Kiểm duyệt tin'],
+    ['apps', 'Hồ sơ SV'],
     ['users', 'Người dùng'],
   ]
+
+  const oppOptions = useMemo(() => {
+    const map = new Map()
+    apps.forEach((a) => {
+      if (a.oppId && !map.has(a.oppId)) map.set(a.oppId, a.title || a.oppId)
+    })
+    return [...map.entries()]
+  }, [apps])
 
   return (
     <div className="flex gap-6">
@@ -216,6 +263,9 @@ export default function AdminPage() {
               <span>{v}</span>
               {k === 'queue' && pendingCount > 0 && (
                 <span className="rounded-full bg-accent-500 px-2 py-0.5 text-xs text-white">{pendingCount}</span>
+              )}
+              {k === 'apps' && apps.length > 0 && (
+                <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs text-slate-700">{apps.length}</span>
               )}
             </button>
           ))}
@@ -404,6 +454,118 @@ export default function AdminPage() {
                     )}
                   </div>
                 ))}
+              </div>
+            )}
+
+            {tab === 'apps' && (
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-brand-100 bg-brand-50/50 px-4 py-3 text-xs text-slate-600">
+                  <strong className="text-brand-800">Lớp 3 — Hồ sơ SV:</strong> chọn tin → nhập tiêu chuẩn →
+                  <em> AI quét</em> → xem nhóm lý do → chỉnh → <em>Gửi yêu cầu cập nhật</em> cho sinh viên (giống Provider).
+                </div>
+                <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-card space-y-3">
+                  <label className="block text-xs font-semibold text-slate-700">
+                    Tin đăng (oppId)
+                    <select
+                      className="input-base mt-1 text-sm"
+                      value={appScanOppId}
+                      onChange={(e) => {
+                        setAppScanOppId(e.target.value)
+                        const sample = apps.find((x) => x.oppId === e.target.value)
+                        if (sample?.screeningCriteria) setAppCriteria(sample.screeningCriteria)
+                      }}
+                    >
+                      <option value="">— Chọn tin có ứng tuyển —</option>
+                      {oppOptions.map(([id, title]) => (
+                        <option key={id} value={id}>{title}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block text-xs font-semibold text-slate-700">
+                    Tiêu chuẩn screening
+                    <textarea
+                      className="input-base mt-1 min-h-[4.5rem] text-sm"
+                      value={appCriteria}
+                      onChange={(e) => setAppCriteria(e.target.value)}
+                      placeholder="VD: CNTT năm 3–4, GPA ≥ 3.0, React/Java, CV rõ ràng…"
+                    />
+                  </label>
+                  <button type="button" className="btn-accent px-4 py-2 text-xs" disabled={scanningApps} onClick={runAdminAppScan}>
+                    {scanningApps ? 'Đang quét AI…' : 'AI quét hồ sơ SV'}
+                  </button>
+                </div>
+
+                {appScanBatch && (
+                  <div className="space-y-3">
+                    <p className="text-sm font-bold text-slate-800">
+                      Kết quả — {appScanBatch.scannedCount} hồ sơ · Đạt {appScanBatch.approveGroup?.length || 0} ·
+                      Xem lại {appScanBatch.reviewGroup?.length || 0} · Từ chối gợi ý {appScanBatch.rejectGroup?.length || 0}
+                    </p>
+                    {[
+                      { key: 'approveGroup', label: 'ĐẠT', tone: 'border-emerald-200 bg-emerald-50/50' },
+                      { key: 'reviewGroup', label: 'CẦN BỔ SUNG', tone: 'border-amber-200 bg-amber-50/50' },
+                      { key: 'rejectGroup', label: 'GỢI Ý TỪ CHỐI', tone: 'border-rose-200 bg-rose-50/50' },
+                    ].map((g) => {
+                      const list = appScanBatch[g.key] || []
+                      if (!list.length) return null
+                      return (
+                        <div key={g.key} className={`rounded-xl border p-3 ${g.tone}`}>
+                          <h4 className="mb-2 text-sm font-bold">{g.label} · {list.length}</h4>
+                          <div className="space-y-3">
+                            {list.map((r) => (
+                              <div key={r.appId} className="rounded-lg bg-white/90 p-3 border border-white shadow-sm">
+                                <p className="text-sm font-semibold">{r.studentName || r.studentEmail}
+                                  <span className="ml-2 text-xs font-normal text-slate-400">{r.verdict} · {Math.round((r.confidence || 0) * 100)}%</span>
+                                </p>
+                                <p className="mt-1 text-xs text-slate-600">{r.summary}</p>
+                                <textarea
+                                  className="input-base mt-2 min-h-[3rem] text-xs"
+                                  value={appReasons[r.appId] || ''}
+                                  onChange={(e) => setAppReasons((m) => ({ ...m, [r.appId]: e.target.value }))}
+                                />
+                                <button type="button" className="btn-accent mt-2 px-3 py-1.5 text-[11px]" onClick={() => sendAppUpdate(r.appId)}>
+                                  Gửi yêu cầu cập nhật cho SV
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                <div className="rounded-2xl border border-slate-100 bg-white shadow-card">
+                  <div className="border-b border-slate-100 px-4 py-3 flex justify-between">
+                    <h3 className="text-sm font-bold text-slate-700">Đơn SUBMITTED / REVIEWING</h3>
+                    <button type="button" className="text-xs text-brand-700" onClick={loadApps}>Làm mới</button>
+                  </div>
+                  <div className="divide-y divide-slate-50">
+                    {apps.length === 0 ? (
+                      <p className="py-10 text-center text-sm text-slate-400">Chưa có đơn chờ xử lý.</p>
+                    ) : apps.map((a) => (
+                      <div key={a.appId} className="px-4 py-3">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <div>
+                            <p className="text-sm font-semibold text-slate-800">{a.studentName || a.studentEmail}</p>
+                            <p className="text-xs text-slate-400">{a.title} · {a.orgName} · {fmtDate(a.appliedAt)}</p>
+                          </div>
+                          <span className={`chip ${APP_STATUS_STYLES[a.status] || 'bg-slate-100'}`}>{APP_STATUS_LABELS[a.status] || a.status}</span>
+                        </div>
+                        {a.aiModerationNote && (
+                          <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900 whitespace-pre-wrap">{a.aiModerationNote}</p>
+                        )}
+                        <button
+                          type="button"
+                          className="chip-btn mt-2 text-accent-700"
+                          onClick={() => { setTab('apps'); setAppScanOppId(a.oppId); if (a.screeningCriteria) setAppCriteria(a.screeningCriteria) }}
+                        >
+                          Quét theo tin này
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 

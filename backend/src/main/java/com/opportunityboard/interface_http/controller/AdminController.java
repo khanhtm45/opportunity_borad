@@ -1,13 +1,17 @@
 package com.opportunityboard.interface_http.controller;
 
+import com.opportunityboard.application.dto.application.ApplicationScanRequest;
 import com.opportunityboard.application.dto.opportunity.FeatureRequest;
 import com.opportunityboard.application.dto.opportunity.ModerateRequest;
 import com.opportunityboard.application.service.AdminService;
+import com.opportunityboard.application.service.ApplicationAiScanService;
+import com.opportunityboard.application.service.ApplicationService;
 import com.opportunityboard.application.service.OpportunityDocumentScanService;
 import com.opportunityboard.application.service.OpportunityService;
 import com.opportunityboard.application.service.OrgDocumentService;
 import com.opportunityboard.application.service.ProviderDocumentScanService;
 import com.opportunityboard.common.response.PagedResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,6 +30,8 @@ public class AdminController {
     private final OrgDocumentService orgDocumentService;
     private final ProviderDocumentScanService providerDocumentScanService;
     private final OpportunityDocumentScanService opportunityDocumentScanService;
+    private final ApplicationAiScanService applicationAiScanService;
+    private final ApplicationService applicationService;
 
     // F06: hàng đợi kiểm duyệt
     @GetMapping("/moderation-queue")
@@ -126,5 +132,35 @@ public class AdminController {
     @GetMapping("/opportunities/{id}/documents")
     public ResponseEntity<?> opportunityDocuments(@PathVariable UUID id) {
         return ResponseEntity.ok(opportunityService.listDocumentsForOwnerOrAdmin(id));
+    }
+
+    /** Danh sách ứng tuyển (SUBMITTED/REVIEWING) — Admin giám sát / AI scan. */
+    @GetMapping("/applications")
+    public ResponseEntity<?> applications(@RequestParam(defaultValue = "0") int page,
+                                          @RequestParam(defaultValue = "50") int size,
+                                          @RequestParam(required = false) UUID oppId) {
+        return ResponseEntity.ok(adminService.listApplications(page, size, oppId));
+    }
+
+    /** Lớp 3 — AI quét CV/hồ sơ SV theo tiêu chuẩn (Admin, giống Provider). */
+    @PostMapping("/applications/{appId}/ai-scan")
+    public ResponseEntity<?> aiScanApplication(@PathVariable UUID appId,
+                                               @RequestParam(defaultValue = "true") boolean apply,
+                                               @Valid @RequestBody ApplicationScanRequest body) {
+        return ResponseEntity.ok(applicationAiScanService.scanOne(appId, body.criteria(), apply));
+    }
+
+    @PostMapping("/opportunities/{id}/applications/ai-scan")
+    public ResponseEntity<?> aiScanApplications(@PathVariable UUID id,
+                                                @RequestParam(defaultValue = "true") boolean apply,
+                                                @Valid @RequestBody ApplicationScanRequest body) {
+        return ResponseEntity.ok(applicationAiScanService.scanOpportunity(id, body.criteria(), apply));
+    }
+
+    @PostMapping("/applications/{appId}/request-update")
+    public ResponseEntity<?> requestAppUpdate(@PathVariable UUID appId,
+                                              @Valid @RequestBody ModerateRequest body) {
+        applicationService.requestStudentUpdate(appId, body.reason());
+        return ResponseEntity.ok().build();
     }
 }
