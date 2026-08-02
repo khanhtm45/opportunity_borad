@@ -439,16 +439,6 @@ public class ProviderDocumentScanService {
         return out;
     }
 
-    private boolean looksLikeMedia(String url) {
-        if (url == null) return false;
-        if (MediaLinkService.isManagedRef(url)) return true;
-        String u = url.toLowerCase(Locale.ROOT);
-        return u.endsWith(".png") || u.endsWith(".jpg") || u.endsWith(".jpeg")
-                || u.endsWith(".webp") || u.endsWith(".gif") || u.endsWith(".pdf")
-                || u.contains(".png?") || u.contains(".jpg?") || u.contains(".jpeg?")
-                || u.contains(".pdf?") || u.contains(".webp?");
-    }
-
     private static String nullToDash(String s) {
         return s == null || s.isBlank() ? "—" : s;
     }
