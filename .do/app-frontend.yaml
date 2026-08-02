@@ -1,18 +1,15 @@
 # DigitalOcean App — FRONTEND ONLY
-# App hiện tại: https://shark-app-epimy.ondigitalocean.app
-# API riêng:     https://oyster-app-eleoo.ondigitalocean.app/api/v1
+# Custom domain: https://ob.khanhtn45.id.vn
+# DO default:     https://shark-app-epimy.ondigitalocean.app
+# API (proxy):    https://oyster-app-eleoo.ondigitalocean.app
 #
-# UI checklist (TRÁNH trang trắng / asset 403):
-# - 1 component Web Service (Docker) — KHÔNG Static Site
-# - Source Directory = frontend
-# - Dockerfile path = Dockerfile
-# - HTTP Port = 8080 ; HTTP Route = /
-# - Run Command = /docker-entrypoint-ob.sh
-# - BUILD_TIME:
-#     VITE_API_URL = https://oyster-app-eleoo.ondigitalocean.app/api/v1
-#     (VITE_BASE_PATH không bắt buộc — Dockerfile luôn force "/")
-# - Xóa env VITE_BASE_PATH nếu đang = URL oyster/api (sai → trang trắng)
-# - Sau khi sửa → Force Rebuild
+# UI checklist:
+# - Web Service (Docker), source = frontend, Dockerfile = Dockerfile
+# - HTTP Port 8080, Route /, Run = /docker-entrypoint-ob.sh
+# - BUILD_TIME: VITE_BASE_PATH=/ ; VITE_API_URL để TRỐNG (dùng /api/v1 same-origin)
+#   → nginx proxy /api → API_PROXY_HOST (tránh 405 trên FE)
+# - RUN_TIME: API_PROXY_HOST=oyster-app-eleoo.ondigitalocean.app
+# - Xóa VITE_BASE_PATH nếu từng = URL API; Force Rebuild sau khi đổi
 
 name: opportunity-board-frontend
 region: sgp
@@ -35,9 +32,13 @@ services:
       - key: PORT
         scope: RUN_TIME
         value: "8080"
+      - key: API_PROXY_HOST
+        scope: RUN_TIME
+        value: "oyster-app-eleoo.ondigitalocean.app"
       - key: VITE_BASE_PATH
         scope: BUILD_TIME
         value: "/"
+      # Empty → browser calls https://ob.khanhtn45.id.vn/api/v1 → nginx → oyster
       - key: VITE_API_URL
         scope: BUILD_TIME
-        value: "https://oyster-app-eleoo.ondigitalocean.app/api/v1"
+        value: ""
