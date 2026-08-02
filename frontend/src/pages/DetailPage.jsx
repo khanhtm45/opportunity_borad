@@ -111,7 +111,10 @@ export default function DetailPage() {
               <button onClick={apply} className="btn-primary">Nộp hồ sơ nội bộ</button>
             )}
             <button onClick={toggleSave} className={saved ? 'btn-ghost bg-gold-50 text-gold-700' : 'btn-ghost'}>
-              {saved ? '🔖 Đã lưu' : '🔖 Lưu'}
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill={saved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.6">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
+              </svg>
+              {saved ? 'Đã lưu' : 'Lưu'}
             </button>
             <button onClick={share} className="btn-ghost">↗ Chia sẻ</button>
           </div>
@@ -160,9 +163,24 @@ export default function DetailPage() {
 }
 
 function Section({ title, html, text }) {
+  const ICONS = {
+    'Mô tả': 'M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z',
+    'Yêu cầu': 'M15 10.5a3 3 0 11-6 0 3 3 0 016 0z M19.5 10.5a7.5 7.5 0 11-15 0 7.5 7.5 0 0115 0z M22.5 10.5a10.5 10.5 0 11-21 0 10.5 10.5 0 0121 0z',
+    'Quyền lợi': 'M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.745 3.745 0 013.296-1.043A3.745 3.745 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.745 3.745 0 013.296 1.043 3.745 3.745 0 011.043 3.296A3.745 3.745 0 0121 12z',
+  }
+  const d = ICONS[title]
   return (
     <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-card">
-      <h3 className="mb-2 text-sm font-bold text-slate-700">{title}</h3>
+      <div className="mb-2 flex items-center gap-2">
+        {d && (
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+              <path strokeLinecap="round" strokeLinejoin="round" d={d} />
+            </svg>
+          </span>
+        )}
+        <h3 className="text-sm font-bold text-slate-700">{title}</h3>
+      </div>
       {html ? <div className="prose-sm text-sm leading-relaxed text-slate-600" dangerouslySetInnerHTML={{ __html: html }} />
         : <p className="text-sm text-slate-600">{text}</p>}
     </div>

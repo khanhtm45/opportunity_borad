@@ -1,13 +1,13 @@
 # DigitalOcean — BE + FE cùng main
 #
-# QUAN TRỌNG trên UI (component FE):
-# - Type = Web Service (Docker), KHÔNG phải Static Site / Node
-# - Source Directory = frontend
-# - Dockerfile path = Dockerfile   ← relative to source_dir (đừng ghi frontend/Dockerfile)
-# - HTTP Port = 8080
-# - Run Command = (để trống — dùng ENTRYPOINT image) hoặc:
-#     /docker-entrypoint-ob.sh
+# QUAN TRỌNG trên UI (component FE) — tránh trang trắng:
+# - Type = Web Service (Docker)
+# - HTTP Route / Path = /     ← KHÔNG dùng /opportunity-borad-frontend
+#   (nếu giữ subpath thì VITE_BASE_PATH phải khớp 100%, vd /opportunity-borad-frontend/)
+# - Source Directory = frontend ; Dockerfile path = Dockerfile
+# - HTTP Port = 8080 ; Run Command = /docker-entrypoint-ob.sh
 # - Env BUILD_TIME: VITE_BASE_PATH=/  và VITE_API_URL=https://<api-host>/api/v1
+# - Sau khi đổi: Force rebuild (không chỉ redeploy cache)
 
 name: opportunity-board
 region: sgp
