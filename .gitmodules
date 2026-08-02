@@ -1,4 +1,4 @@
-﻿[submodule ".repos/hermes-agent"]
+[submodule ".repos/hermes-agent"]
 	path = .repos/hermes-agent
 	url = https://github.com/NousResearch/hermes-agent.git
 [submodule ".repos/huashu-design"]
