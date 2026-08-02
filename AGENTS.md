@@ -28,7 +28,8 @@ npx harness-score --min-level 4
 ```
 
 Local FE: open `http://localhost:5173/opportunity_borad/` (Vite `base` is `/opportunity_borad/`).
-Local API: `http://localhost:8080` with Vite proxy `/api` → `:8080`.
+Local API: `http://localhost:8080` with Vite proxy `/api` → `:8080`.  
+Swagger: `http://localhost:8080/api/swagger-ui.html` (JWT via Authorize).
 
 ## Architecture conventions
 

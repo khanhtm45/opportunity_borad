@@ -38,7 +38,15 @@ public class SecurityConfig {
             "/api/v1/opportunities/*/view",
             "/api/v1/media/view",
             "/api/v1/uploads/guest",
-            "/v3/api-docs/**", "/swagger-ui/**", "/actuator/health"
+            // Swagger / OpenAPI (springdoc) — path dưới /api để DO App route /api khớp
+            "/api/v3/api-docs",
+            "/api/v3/api-docs/**",
+            "/api/swagger-ui.html",
+            "/api/swagger-ui/**",
+            "/v3/api-docs/**",
+            "/swagger-ui/**",
+            "/swagger-ui.html",
+            "/actuator/health"
     };
 
     @Bean

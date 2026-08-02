@@ -4,6 +4,9 @@
 > Dựa trên: `schema.sql` (docs/db/) + phát hiện từ `Phan_Tich_Chi_Tiet_Lo_Hong.md`.
 > Base URL: `/api/v1`  ·  Auth: Bearer JWT  ·  Format: JSON
 
+**Swagger UI:** `/api/swagger-ui.html` · OpenAPI JSON: `/api/v3/api-docs`  
+Production: `https://oyster-app-eleoo.ondigitalocean.app/api/swagger-ui.html`
+
 ---
 
 ## 1. CONVENTIONS

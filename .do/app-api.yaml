@@ -41,6 +41,9 @@ services:
       - key: MEDIA_PUBLIC_BASE_URL
         scope: RUN_TIME
         value: "https://oyster-app-eleoo.ondigitalocean.app/api/v1"
+      - key: SPRINGDOC_SERVER_URL
+        scope: RUN_TIME
+        value: "https://oyster-app-eleoo.ondigitalocean.app"
       - key: UPLOAD_STORAGE
         scope: RUN_TIME
         value: "s3"
