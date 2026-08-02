@@ -5,7 +5,7 @@ import api from '../api/client.js'
 import { useAuth } from '../context/AuthContext.jsx'
 import { InlineLoader } from '../components/Splash.jsx'
 import {
-  CATEGORY_LABELS, OPP_STATUS_STYLES, STATUS_LABELS,
+  CATEGORY_LABELS, OPP_STATUS_STYLES, STATUS_LABELS, APP_STATUS_LABELS, APP_STATUS_STYLES,
   WORKTYPE_LABELS, LOCATION_LABELS, EMPLOYMENT_TYPE_LABELS,
   JOB_LEVEL_LABELS, EXPERIENCE_LEVEL_LABELS, EDUCATION_LEVEL_LABELS, fmtDate,
 } from '../lib/constants.js'
@@ -469,6 +469,34 @@ export default function ProviderPage() {
           </form>
         </div>
 
+        {/* Duyệt CV sinh viên — lối vào rõ ràng */}
+        <div className="rounded-2xl border border-accent-200 bg-gradient-to-br from-accent-50/80 to-white p-5 shadow-card">
+          <h2 className="text-lg font-bold text-slate-800">Duyệt CV sinh viên</h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Chọn tin → nhập tiêu chuẩn → AI quét hồ sơ → xem lý do → gửi yêu cầu cập nhật / từ chối / mời phỏng vấn.
+          </p>
+          {loading ? <InlineLoader /> : (
+            <div className="mt-3 space-y-2">
+              {list.filter((o) => (o.applicationCount || 0) > 0).map((o) => (
+                <div key={`cv-${o.oppId}`} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-100 bg-white px-3 py-2.5">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-slate-800">{o.title}</p>
+                    <p className="text-xs text-slate-400">{o.applicationCount} hồ sơ ứng tuyển</p>
+                  </div>
+                  <button type="button" className="btn-accent shrink-0 px-3 py-1.5 text-xs" onClick={() => openApps(o)}>
+                    Duyệt CV / AI scan
+                  </button>
+                </div>
+              ))}
+              {list.filter((o) => (o.applicationCount || 0) > 0).length === 0 && (
+                <p className="rounded-xl border border-dashed border-slate-200 py-6 text-center text-sm text-slate-400">
+                  Chưa có sinh viên nộp đơn. Khi có ứng tuyển, bấm <strong>Duyệt CV / AI scan</strong> tại đây.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Danh sách */}
         <div>
           <h1 className="mb-3 text-xl font-bold text-slate-800">Tin đã đăng ({list.length})</h1>
@@ -487,13 +515,15 @@ export default function ProviderPage() {
                   )}
                   <p className="text-xs text-slate-400">Hạn {fmtDate(o.deadline)} · {o.applicationCount || 0} ứng tuyển{o.externalRef ? ` · Mã: ${o.externalRef}` : ''}</p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
-                    <button className="chip-btn" onClick={() => openEdit(o)}>Sửa</button>
-                    {o.status === 'APPROVED' && <button className="chip-btn" onClick={() => doHide(o)}>Ẩn</button>}
-                    {o.status === 'HIDDEN' && <button className="chip-btn" onClick={() => doHide(o)}>Hiện</button>}
-                    {o.status === 'APPROVED' && <button className="chip-btn" onClick={() => doClose(o)}>Đóng</button>}
-                    {o.status === 'DRAFT' && <button className="chip-btn" onClick={() => providerApi.submit(o.oppId).then(load)}>Gửi duyệt</button>}
-                    <button className="chip-btn" onClick={() => openApps(o)}>Ứng tuyển</button>
-                    <button className="chip-btn" onClick={() => doExport(o.oppId)}>Export CSV</button>
+                    <button type="button" className="chip-btn" onClick={() => openEdit(o)}>Sửa</button>
+                    {o.status === 'APPROVED' && <button type="button" className="chip-btn" onClick={() => doHide(o)}>Ẩn</button>}
+                    {o.status === 'HIDDEN' && <button type="button" className="chip-btn" onClick={() => doHide(o)}>Hiện</button>}
+                    {o.status === 'APPROVED' && <button type="button" className="chip-btn" onClick={() => doClose(o)}>Đóng</button>}
+                    {o.status === 'DRAFT' && <button type="button" className="chip-btn" onClick={() => providerApi.submit(o.oppId).then(load)}>Gửi duyệt</button>}
+                    <button type="button" className="chip-btn bg-accent-50 text-accent-800" onClick={() => openApps(o)}>
+                      Duyệt CV ({o.applicationCount || 0})
+                    </button>
+                    <button type="button" className="chip-btn" onClick={() => doExport(o.oppId)}>Export CSV</button>
                   </div>
                 </div>
               ))}
@@ -503,13 +533,26 @@ export default function ProviderPage() {
         </div>
       </div>
 
-      {/* Modal ứng tuyển + AI scan CV */}
+      {/* Modal duyệt CV + AI scan */}
       {apps && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setApps(null)}>
-          <div className="max-h-[90vh] w-full max-w-3xl overflow-auto rounded-2xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="presentation"
+          onClick={() => setApps(null)}
+          onKeyDown={(e) => { if (e.key === 'Escape') setApps(null) }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="provider-apps-title"
+            tabIndex={-1}
+            className="max-h-[90vh] w-full max-w-3xl overflow-auto rounded-2xl bg-white p-5 shadow-xl outline-none"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-lg font-bold">Ứng tuyển — {apps.opp.title}</h2>
-              <button type="button" className="text-slate-400" onClick={() => setApps(null)}>✕</button>
+              <h2 id="provider-apps-title" className="text-lg font-bold">Duyệt CV — {apps.opp.title}</h2>
+              <button type="button" className="text-slate-400" onClick={() => setApps(null)} aria-label="Đóng">✕</button>
             </div>
 
             <div className="mb-4 rounded-xl border border-brand-100 bg-brand-50/50 p-3 text-xs text-slate-600">
@@ -615,32 +658,53 @@ export default function ProviderPage() {
               </div>
             )}
 
-            <h3 className="mb-2 text-sm font-bold text-slate-700">Danh sách ứng tuyển</h3>
+            <h3 className="mb-2 text-sm font-bold text-slate-700">Danh sách hồ sơ / CV</h3>
             <div className="space-y-2">
-              {apps.items.map((a) => (
-                <div key={a.appId} className="rounded-lg border border-slate-100 p-3">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="text-sm">
-                      <p className="font-medium">{a.studentName || a.studentEmail}</p>
-                      <p className="text-xs text-slate-400">
-                        {a.studentEmail} · Nộp {fmtDate(a.appliedAt)}
-                        {a.university ? ` · ${a.university}` : ''}
-                        {a.major ? ` · ${a.major}` : ''}
-                      </p>
+              {apps.items.map((a) => {
+                const cvHref = mediaSrc(a.cvFile)
+                const canOpenCv = cvHref && (cvHref.startsWith('http') || cvHref.startsWith('/'))
+                return (
+                  <div key={a.appId} className="rounded-lg border border-slate-100 p-3">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="text-sm">
+                        <p className="font-medium">{a.studentName || a.studentEmail}</p>
+                        <p className="text-xs text-slate-400">
+                          {a.studentEmail} · Nộp {fmtDate(a.appliedAt)}
+                          {a.university ? ` · ${a.university}` : ''}
+                          {a.major ? ` · ${a.major}` : ''}
+                        </p>
+                        <div className="mt-1.5 flex flex-wrap gap-2">
+                          {canOpenCv ? (
+                            <a href={cvHref} target="_blank" rel="noreferrer" className="chip-btn text-brand-700">
+                              Xem CV
+                            </a>
+                          ) : (
+                            <span className="text-[11px] text-slate-400">Chưa có link CV hợp lệ</span>
+                          )}
+                          <span className={`chip ${APP_STATUS_STYLES[a.status] || 'bg-slate-100'}`}>
+                            {APP_STATUS_LABELS[a.status] || a.status}
+                          </span>
+                        </div>
+                      </div>
+                      <select
+                        className="input-base w-44"
+                        value={a.status}
+                        onChange={(e) => changeApp(a.appId, e.target.value)}
+                        aria-label="Đổi trạng thái hồ sơ"
+                      >
+                        {['SUBMITTED', 'REVIEWING', 'INTERVIEW', 'ACCEPTED', 'REJECTED', 'WITHDRAWN'].map((s) => (
+                          <option key={s} value={s}>{APP_STATUS_LABELS[s] || s}</option>
+                        ))}
+                      </select>
                     </div>
-                    <select className="input-base w-40" value={a.status} onChange={(e) => changeApp(a.appId, e.target.value)}>
-                      {['SUBMITTED', 'REVIEWING', 'INTERVIEW', 'ACCEPTED', 'REJECTED', 'WITHDRAWN'].map((s) => (
-                        <option key={s} value={s}>{STATUS_LABELS[s] || s}</option>
-                      ))}
-                    </select>
+                    {(a.aiModerationNote || a.providerNote || a.rejectionReason) && (
+                      <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900 whitespace-pre-wrap">
+                        {a.aiModerationNote || a.providerNote || a.rejectionReason}
+                      </p>
+                    )}
                   </div>
-                  {(a.aiModerationNote || a.providerNote || a.rejectionReason) && (
-                    <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900 whitespace-pre-wrap">
-                      {a.aiModerationNote || a.providerNote || a.rejectionReason}
-                    </p>
-                  )}
-                </div>
-              ))}
+                )
+              })}
               {apps.items.length === 0 && <p className="text-sm text-slate-400">Chưa có ứng tuyển.</p>}
             </div>
           </div>
