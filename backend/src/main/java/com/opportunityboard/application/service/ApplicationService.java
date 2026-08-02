@@ -8,6 +8,7 @@ import com.opportunityboard.infrastructure.repository.ApplicationRepository;
 import com.opportunityboard.infrastructure.repository.ApplicationStatusHistoryRepository;
 import com.opportunityboard.infrastructure.repository.OpportunityRepository;
 import com.opportunityboard.infrastructure.repository.OrgMemberRepository;
+import com.opportunityboard.infrastructure.repository.StudentProfileRepository;
 import com.opportunityboard.security.CurrentUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -16,9 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 public class ApplicationService {
@@ -27,6 +28,7 @@ public class ApplicationService {
     private final OpportunityRepository opportunityRepository;
     private final OrgMemberRepository orgMemberRepository;
     private final ApplicationStatusHistoryRepository historyRepository;
+    private final StudentProfileRepository studentProfileRepository;
     private final NotificationService notificationService;
     private final StudentProfileService studentProfileService;
     private final CurrentUser currentUser;
@@ -91,6 +93,55 @@ public class ApplicationService {
         notificationService.notifyAppStatus(app, to);
     }
 
+    /** Lưu ghi chú AI scan — không đổi status. */
+    @Transactional
+    public void saveAiScanNote(UUID appId, String note, String criteria) {
+        Application app = applicationRepository.findById(appId)
+                .orElseThrow(() -> new NotFoundException("Không tồn tại"));
+        requireOwnerOfOpp(app.getOpportunity());
+        app.setAiModerationNote(note);
+        app.setAiScannedAt(Instant.now());
+        if (criteria != null && !criteria.isBlank()) {
+            app.setScreeningCriteria(criteria.trim());
+        }
+        app.setUpdatedAt(Instant.now());
+        applicationRepository.save(app);
+    }
+
+    /**
+     * Gửi yêu cầu sinh viên cập nhật hồ sơ (giữ / chuyển REVIEWING, không REJECT).
+     * Lý do hiện trên đơn SV + notification APP_UPDATE_REQUIRED.
+     */
+    @Transactional
+    public void requestStudentUpdate(UUID appId, String reason) {
+        if (reason == null || reason.isBlank()) {
+            throw new BadRequestException("Cần nhập lý do gửi sinh viên");
+        }
+        Application app = applicationRepository.findById(appId)
+                .orElseThrow(() -> new NotFoundException("Không tồn tại"));
+        requireOwnerOfOpp(app.getOpportunity());
+        if (app.getStatus() != AppStatus.SUBMITTED && app.getStatus() != AppStatus.REVIEWING) {
+            throw new ConflictException("Chỉ yêu cầu cập nhật khi SUBMITTED/REVIEWING");
+        }
+        String r = reason.trim();
+        if (app.getStatus() == AppStatus.SUBMITTED) {
+            changeStatus(app, AppStatus.REVIEWING, r, "REQUEST_UPDATE: " + r);
+        } else {
+            app.setProviderNote(r);
+            app.setUpdatedAt(Instant.now());
+            app.setUpdatedBy(currentUser.get());
+            applicationRepository.save(app);
+            historyRepository.save(ApplicationStatusHistory.builder()
+                    .application(app).fromStatus(AppStatus.REVIEWING).toStatus(AppStatus.REVIEWING)
+                    .changedBy(currentUser.get())
+                    .note("REQUEST_UPDATE: " + r).build());
+        }
+        app.setAiModerationNote(r);
+        app.setProviderNote(r);
+        applicationRepository.save(app);
+        notificationService.notifyAppUpdateRequired(app, r);
+    }
+
     /** State machine: chỉ tiến, không lùi (Mục 2). */
     private void changeStatus(Application app, AppStatus to, String note, String systemNote) {
         AppStatus from = app.getStatus();
@@ -106,7 +157,6 @@ public class ApplicationService {
         if (note != null) app.setProviderNote(note);
         applicationRepository.save(app);
 
-        // lưu history
         historyRepository.save(ApplicationStatusHistory.builder()
                 .application(app).fromStatus(from).toStatus(to)
                 .changedBy(currentUser.get())
@@ -114,13 +164,24 @@ public class ApplicationService {
     }
 
     /** Chặn IDOR: chỉ owner opp (org owner / member) hoặc admin. */
-    private void requireOwnerOfOpp(Opportunity o) {
+    public void requireOwnerOfOpp(Opportunity o) {
         User user = currentUser.get();
         if (user.getRole() == UserRole.ADMIN) return;
         if (user.getRole() != UserRole.PROVIDER) throw new ForbiddenException("Chỉ Provider/Admin");
         boolean owner = o.getOrg().getOwnerUser().getUserId().equals(user.getUserId())
                 || orgMemberRepository.existsByOrgOrgIdAndUserUserId(o.getOrg().getOrgId(), user.getUserId());
         if (!owner) throw new ForbiddenException("Không có quyền với opportunity này");
+    }
+
+    public Opportunity requireOwnerOfOppId(UUID oppId) {
+        Opportunity o = opportunityRepository.findById(oppId)
+                .orElseThrow(() -> new NotFoundException("Opportunity không tồn tại"));
+        requireOwnerOfOpp(o);
+        return o;
+    }
+
+    public UUID currentUserId() {
+        return currentUser.getId();
     }
 
     private void decrementCounter(Opportunity o) {
@@ -146,25 +207,21 @@ public class ApplicationService {
     public AppPage appsByStudent(UUID studentId, int page, int size) {
         Page<Application> p = applicationRepository.findByStudentUserId(studentId,
                 PageRequest.of(page, size));
-        var items = p.getContent().stream().map(a -> ApplicationSummaryResponse.builder()
-                .appId(a.getAppId())
-                .oppId(a.getOpportunity().getOppId())
-                .title(a.getOpportunity().getTitle())
-                .slug(a.getOpportunity().getSlug())
-                .orgName(a.getOpportunity().getOrg().getOrgName())
-                .status(a.getStatus())
-                .isExternal(a.isExternal())
-                .cvFile(a.getCvFile())
-                .appliedAt(a.getAppliedAt())
-                .decidedAt(a.getDecidedAt())
-                .build()).collect(Collectors.toList());
+        var items = p.getContent().stream().map(this::toSummary).collect(Collectors.toList());
         return new AppPage(items, p.getTotalElements());
     }
 
     public AppPage appsByOppOwner(UUID oppId, int page, int size) {
         UUID userId = currentUser.getId();
         Page<Application> p = applicationRepository.findByOpportunityOwner(oppId, userId, PageRequest.of(page, size));
-        var items = p.getContent().stream().map(a -> ApplicationSummaryResponse.builder()
+        var items = p.getContent().stream().map(this::toSummary).collect(Collectors.toList());
+        return new AppPage(items, p.getTotalElements());
+    }
+
+    private ApplicationSummaryResponse toSummary(Application a) {
+        StudentProfile profile = studentProfileRepository
+                .findByUserUserId(a.getStudent().getUserId()).orElse(null);
+        return ApplicationSummaryResponse.builder()
                 .appId(a.getAppId())
                 .oppId(a.getOpportunity().getOppId())
                 .title(a.getOpportunity().getTitle())
@@ -177,7 +234,16 @@ public class ApplicationService {
                 .decidedAt(a.getDecidedAt())
                 .studentName(a.getStudent().getFullName())
                 .studentEmail(a.getStudent().getEmail())
-                .build()).collect(Collectors.toList());
-        return new AppPage(items, p.getTotalElements());
+                .coverLetter(a.getCoverLetter())
+                .providerNote(a.getProviderNote())
+                .rejectionReason(a.getRejectionReason())
+                .aiModerationNote(a.getAiModerationNote())
+                .aiScannedAt(a.getAiScannedAt())
+                .screeningCriteria(a.getScreeningCriteria())
+                .major(profile != null ? profile.getMajor() : null)
+                .university(profile != null ? profile.getUniversity() : null)
+                .universityYear(profile != null ? profile.getUniversityYear() : null)
+                .skills(profile != null ? profile.getSkills() : null)
+                .build();
     }
 }

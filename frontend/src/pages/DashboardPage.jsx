@@ -66,16 +66,26 @@ export default function DashboardPage() {
           <>
             {tab === 'applications' && (
               <div className="space-y-2">
-                {apps.length === 0 ? <p className="py-12 text-center text-slate-400">Chưa có đơn nào.</p> :
+                {apps.length === 0 ? <p className="py-12 text-center text-slate-400">Chưa có đơn nào. <Link to="/me/applications" className="text-brand-600">Xem chi tiết →</Link></p> :
                   apps.map((a) => (
-                    <Link key={a.appId} to={`/opportunities/${a.slug}`}
-                      className="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-3 shadow-card">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-700">{a.title}</p>
-                        <p className="text-xs text-slate-400">Nộp {fmtDate(a.appliedAt)}</p>
+                    <div key={a.appId} className="rounded-xl border border-slate-100 bg-white p-3 shadow-card">
+                      <div className="flex items-center justify-between gap-3">
+                        <Link to={`/opportunities/${a.slug}`} className="min-w-0">
+                          <p className="text-sm font-semibold text-slate-700 hover:text-brand-700">{a.title}</p>
+                          <p className="text-xs text-slate-400">Nộp {fmtDate(a.appliedAt)}</p>
+                        </Link>
+                        <span className={`chip shrink-0 ${APP_STATUS_STYLES[a.status] || 'bg-slate-100'}`}>{APP_STATUS_LABELS[a.status] || a.status}</span>
                       </div>
-                      <span className={`chip ${APP_STATUS_STYLES[a.status] || 'bg-slate-100'}`}>{APP_STATUS_LABELS[a.status] || a.status}</span>
-                    </Link>
+                      {a.status === 'REJECTED' && (a.rejectionReason || a.providerNote) && (
+                        <p className="mt-2 text-xs text-rose-700">Lý do từ chối: {a.rejectionReason || a.providerNote}</p>
+                      )}
+                      {a.status === 'REVIEWING' && (a.providerNote || a.aiModerationNote) && (
+                        <p className="mt-2 text-xs text-amber-800">
+                          Cần cập nhật: {a.providerNote || a.aiModerationNote}{' '}
+                          <Link to="/me/profile" className="font-semibold text-brand-700 hover:underline">Sửa hồ sơ →</Link>
+                        </p>
+                      )}
+                    </div>
                   ))}
               </div>
             )}

@@ -41,6 +41,16 @@ public class Application {
     @Column(columnDefinition = "text")
     private String rejectionReason;
 
+    /** Ghi chú AI sau khi quét CV theo tiêu chuẩn nhà đăng. */
+    @Column(columnDefinition = "text")
+    private String aiModerationNote;
+
+    private Instant aiScannedAt;
+
+    /** Tiêu chuẩn screening lần quét gần nhất. */
+    @Column(columnDefinition = "text")
+    private String screeningCriteria;
+
     @Builder.Default
     private Instant appliedAt = Instant.now();
     private Instant reviewedAt;

@@ -21,4 +21,14 @@ public class ApplicationSummaryResponse {
     private Instant decidedAt;
     private String studentName;   // chỉ dùng ở provider view
     private String studentEmail;
+    private String coverLetter;
+    private String providerNote;
+    private String rejectionReason;
+    private String aiModerationNote;
+    private Instant aiScannedAt;
+    private String screeningCriteria;
+    private String major;
+    private String university;
+    private Short universityYear;
+    private String skills;
 }

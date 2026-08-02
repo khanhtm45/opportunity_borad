@@ -152,6 +152,19 @@ public abstract class AbstractIntegrationTest {
                     ADD COLUMN IF NOT EXISTS ai_moderation_note TEXT,
                     ADD COLUMN IF NOT EXISTS ai_scanned_at TIMESTAMP
                 """);
+        // V9 — AI quét hồ sơ ứng tuyển (CV SV)
+        jdbcTemplate.execute("""
+                DO $$ BEGIN
+                    ALTER TYPE notif_type ADD VALUE IF NOT EXISTS 'APP_UPDATE_REQUIRED';
+                EXCEPTION WHEN duplicate_object THEN NULL;
+                END $$
+                """);
+        jdbcTemplate.execute("""
+                ALTER TABLE applications
+                    ADD COLUMN IF NOT EXISTS ai_moderation_note TEXT,
+                    ADD COLUMN IF NOT EXISTS ai_scanned_at TIMESTAMP,
+                    ADD COLUMN IF NOT EXISTS screening_criteria TEXT
+                """);
     }
 
     /**

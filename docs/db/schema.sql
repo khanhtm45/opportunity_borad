@@ -21,7 +21,7 @@ CREATE TYPE work_type        AS ENUM ('ONLINE', 'OFFLINE', 'HYBRID');
 CREATE TYPE location_type    AS ENUM ('HA_NOI', 'TP_HCM', 'DA_NANG', 'TOAN_QUOC', 'QUOC_TE', 'KHAC');
 
 CREATE TYPE app_status       AS ENUM ('SUBMITTED', 'REVIEWING', 'INTERVIEW', 'ACCEPTED', 'REJECTED', 'WITHDRAWN');
-CREATE TYPE notif_type       AS ENUM ('NEW_OPP', 'DEADLINE_ALERT', 'APP_STATUS', 'PENDING_REVIEW', 'OPP_REJECTED', 'OPP_APPROVED', 'ORG_UPDATE_REQUIRED', 'OPP_UPDATE_REQUIRED');
+CREATE TYPE notif_type       AS ENUM ('NEW_OPP', 'DEADLINE_ALERT', 'APP_STATUS', 'PENDING_REVIEW', 'OPP_REJECTED', 'OPP_APPROVED', 'ORG_UPDATE_REQUIRED', 'OPP_UPDATE_REQUIRED', 'APP_UPDATE_REQUIRED');
 CREATE TYPE notif_channel    AS ENUM ('EMAIL', 'PUSH', 'IN_APP');
 CREATE TYPE notif_frequency  AS ENUM ('INSTANT', 'DAILY_DIGEST', 'WEEKLY');
 CREATE TYPE moderation_action AS ENUM ('APPROVED', 'REJECTED');
@@ -201,6 +201,9 @@ CREATE TABLE applications (
     status         app_status NOT NULL DEFAULT 'SUBMITTED',
     provider_note  TEXT,                                  -- phản hồi provider
     rejection_reason TEXT,
+    ai_moderation_note TEXT,                              -- ghi chú AI screening CV
+    ai_scanned_at  TIMESTAMP,
+    screening_criteria TEXT,                              -- tiêu chuẩn lần quét gần nhất
     applied_at     TIMESTAMP NOT NULL DEFAULT NOW(),
     reviewed_at    TIMESTAMP,
     interviewed_at TIMESTAMP,

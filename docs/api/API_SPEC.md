@@ -156,9 +156,16 @@
 | POST | `/provider/org/documents` | Thêm hồ sơ org `{docType,title,fileUrl}` (reset `PENDING` nếu chưa VERIFIED) | Provider |
 | DELETE | `/provider/org/documents/:docId` | Xoá hồ sơ org (chỉ khi chưa VERIFIED) | Provider |
 | GET  | `/provider/applications/:app_id` | Xem 1 app + CV | Provider(owner) |
-| PUT  | `/provider/applications/:app_id/status` | Đổi status (state machine) | Provider(owner) |
+| PUT  | `/provider/applications/:app_id/status` | Đổi status (state machine; `?to=` hoặc body `{status,note}`) | Provider(owner) |
+| POST | `/provider/applications/:app_id/ai-scan` | **Lớp 3** — AI quét 1 CV/hồ sơ SV (body `{criteria}`) | Provider(owner) |
+| POST | `/provider/opportunities/:id/applications/ai-scan` | **Lớp 3** — AI quét hàng loạt + nhóm APPROVE/REVIEW/REJECT | Provider(owner) |
+| POST | `/provider/applications/:app_id/request-update` | Gửi lý do yêu cầu SV cập nhật hồ sơ (`APP_UPDATE_REQUIRED`) | Provider(owner) |
 | GET  | `/provider/applications/export?fmt=csv` | Xuất Excel/CSV | Provider(owner) |
 | GET  | `/provider/stats` | Thống kê org mình | Provider |
+
+> **Lớp 3 — Hồ sơ ứng tuyển:** Provider nhập tiêu chuẩn screening → AI quét CV (+ profile).  
+> `apply=true` chỉ lưu `ai_moderation_note` / `screening_criteria` — **không tự ACCEPT/REJECT**.  
+> Provider xem nhóm lý do → chỉnh → `request-update` (SV nhận `APP_UPDATE_REQUIRED`) hoặc đổi status.
 
 **Hồ sơ tin đăng (`documents` trên create/update):** `{docType, title, fileUrl}` với `docType` = `PROGRAM_PROOF` \| `PARTNERSHIP_LETTER` \| `OTHER`.  
 `submit` trả `400` nếu tin chưa có ≥1 document.

@@ -20,6 +20,6 @@ public interface NotificationService {
     void notifyDeadlineAlert(SavedOpportunity s);
     /** Yêu cầu provider cập nhật / bổ sung hồ sơ tổ chức (AI scan sai/thiếu). */
     void notifyOrgUpdateRequired(Organization org, String reason);
-
-    void notifyOppUpdateRequired(Opportunity o, String reason);
+    /** Yêu cầu sinh viên bổ sung / cập nhật hồ sơ ứng tuyển. */
+    void notifyAppUpdateRequired(Application app, String reason);
 }

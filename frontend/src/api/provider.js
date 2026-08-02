@@ -12,10 +12,28 @@ export const providerApi = {
   extend: (id, epoch) => api.post(`/opportunities/${id}/extend?newDeadlineEpoch=${epoch}`).then((r) => r.data),
   featureRequest: (id) => api.post(`/opportunities/${id}/feature-request`).then((r) => r.data),
   // Ứng tuyển: backend dùng /api/v1/provider/applications (ApplicationController)
-  applications: (id) => api.get(`/provider/opportunities/${id}/applications`).then((r) => r.data),
+  applications: (id) => api.get(`/provider/opportunities/${id}/applications`).then((r) => {
+    const d = r.data
+    if (Array.isArray(d)) return d
+    return d?.items || []
+  }),
   appDetail: (appId) => api.get(`/provider/applications/${appId}`).then((r) => r.data),
   setAppStatus: (appId, status, note) =>
-    api.put(`/provider/applications/${appId}/status`, { status, note }).then((r) => r.data),
+    api.put(`/provider/applications/${appId}/status`, { status, note }, {
+      params: { to: status, note: note || undefined },
+    }).then((r) => r.data),
+  aiScanApps: (oppId, criteria, apply = true) =>
+    api.post(`/provider/opportunities/${oppId}/applications/ai-scan`, { criteria }, {
+      params: { apply },
+      timeout: 180000,
+    }).then((r) => r.data),
+  aiScanApp: (appId, criteria, apply = true) =>
+    api.post(`/provider/applications/${appId}/ai-scan`, { criteria }, {
+      params: { apply },
+      timeout: 120000,
+    }).then((r) => r.data),
+  requestAppUpdate: (appId, reason) =>
+    api.post(`/provider/applications/${appId}/request-update`, { reason }).then((r) => r.data),
   exportCsv: (oppId) =>
     api.get(`/provider/applications/export`, { params: { fmt: 'csv', oppId }, responseType: 'blob' })
       .then((r) => r.data),

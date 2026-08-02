@@ -110,4 +110,15 @@ public class NotificationServiceImpl implements NotificationService {
         save(owner, NotifType.OPP_UPDATE_REQUIRED, NotifChannel.EMAIL,
                 "Yêu cầu cập nhật tin đăng", body, o.getOppId());
     }
+
+    @Override
+    public void notifyAppUpdateRequired(Application app, String reason) {
+        String body = "Đơn ứng tuyển \"" + app.getOpportunity().getTitle() + "\" cần bổ sung / cập nhật hồ sơ. "
+                + "Vui lòng cập nhật CV trên hồ sơ cá nhân rồi liên hệ nhà tuyển dụng hoặc nộp lại nếu cần. "
+                + (reason != null && !reason.isBlank() ? "Lý do: " + reason : "");
+        save(app.getStudent(), NotifType.APP_UPDATE_REQUIRED, NotifChannel.IN_APP,
+                "Yêu cầu cập nhật hồ sơ ứng tuyển", body, app.getAppId());
+        save(app.getStudent(), NotifType.APP_UPDATE_REQUIRED, NotifChannel.EMAIL,
+                "Yêu cầu cập nhật hồ sơ ứng tuyển", body, app.getAppId());
+    }
 }

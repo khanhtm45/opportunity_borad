@@ -43,7 +43,10 @@ export default function ProviderPage() {
   const [editing, setEditing] = useState(null) // opp đang sửa
   const [msg, setMsg] = useState('')
   const [apps, setApps] = useState(null) // modal danh sách ứng tuyển
-  const [appStatus, setAppStatus] = useState({})
+  const [screeningCriteria, setScreeningCriteria] = useState('')
+  const [scanningApps, setScanningApps] = useState(false)
+  const [appScanBatch, setAppScanBatch] = useState(null)
+  const [appReasons, setAppReasons] = useState({}) // appId -> editable reason
   const [orgDocs, setOrgDocs] = useState([])
   const [orgProfile, setOrgProfile] = useState(null)
   const [orgDocForm, setOrgDocForm] = useState({ docType: 'BUSINESS_LICENSE', title: '', fileUrl: '' })
@@ -173,10 +176,68 @@ export default function ProviderPage() {
   }
   const openApps = async (o) => {
     const data = await providerApi.applications(o.oppId)
-    setApps({ opp: o, items: data || [] })
+    const items = data || []
+    setApps({ opp: o, items })
+    setAppScanBatch(null)
+    setAppReasons({})
+    const prev = items.find((a) => a.screeningCriteria)?.screeningCriteria
+    setScreeningCriteria(prev || o.requirements || '')
   }
-  const changeApp = async (appId, status) => {
-    await providerApi.setAppStatus(appId, status); setApps((a) => ({ ...a, items: a.items.map((x) => x.appId === appId ? { ...x, status } : x) }))
+  const reloadApps = async () => {
+    if (!apps?.opp) return
+    const items = await providerApi.applications(apps.opp.oppId)
+    setApps((a) => ({ ...a, items: items || [] }))
+  }
+  const changeApp = async (appId, status, note) => {
+    try {
+      await providerApi.setAppStatus(appId, status, note)
+      setMsg(`✅ Đã cập nhật trạng thái → ${STATUS_LABELS[status] || status}`)
+      await reloadApps()
+    } catch (e) {
+      setMsg(e.response?.data?.error?.message || e.response?.data || 'Không đổi được trạng thái')
+    }
+  }
+  const runAppAiScan = async () => {
+    if (!apps?.opp) return
+    const criteria = (screeningCriteria || '').trim()
+    if (criteria.length < 10) {
+      setMsg('⚠️ Nhập tiêu chuẩn screening (≥10 ký tự) trước khi quét AI')
+      return
+    }
+    setScanningApps(true)
+    setMsg('')
+    setAppScanBatch(null)
+    try {
+      const batch = await providerApi.aiScanApps(apps.opp.oppId, criteria, true)
+      setAppScanBatch(batch)
+      const reasons = {}
+      ;(batch.results || []).forEach((r) => {
+        reasons[r.appId] = r.moderationNote || r.summary || ''
+      })
+      setAppReasons(reasons)
+      setMsg(`🤖 Đã quét ${batch.scannedCount || 0} hồ sơ — xem nhóm lý do bên dưới, kiểm tra lại rồi gửi SV`)
+      await reloadApps()
+    } catch (e) {
+      setMsg(e.response?.data?.error?.message || 'AI quét hồ sơ lỗi')
+    } finally {
+      setScanningApps(false)
+    }
+  }
+  const sendAppUpdate = async (appId) => {
+    const reason = (appReasons[appId] || '').trim()
+    if (!reason) { setMsg('⚠️ Nhập / giữ lý do trước khi gửi yêu cầu cập nhật'); return }
+    try {
+      await providerApi.requestAppUpdate(appId, reason)
+      setMsg('✅ Đã gửi yêu cầu cập nhật hồ sơ cho sinh viên')
+      await reloadApps()
+    } catch (e) {
+      setMsg(e.response?.data?.error?.message || 'Lỗi gửi yêu cầu')
+    }
+  }
+  const rejectAppWithReason = async (appId) => {
+    const reason = (appReasons[appId] || '').trim()
+    if (!reason) { setMsg('⚠️ Nhập lý do từ chối trước'); return }
+    await changeApp(appId, 'REJECTED', reason)
   }
 
   if (user?.role !== 'PROVIDER')
@@ -442,24 +503,142 @@ export default function ProviderPage() {
         </div>
       </div>
 
-      {/* Modal ứng tuyển */}
+      {/* Modal ứng tuyển + AI scan CV */}
       {apps && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setApps(null)}>
-          <div className="max-h-[80vh] w-full max-w-2xl overflow-auto rounded-2xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="max-h-[90vh] w-full max-w-3xl overflow-auto rounded-2xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-lg font-bold">Ứng tuyển — {apps.opp.title}</h2>
-              <button className="text-slate-400" onClick={() => setApps(null)}>✕</button>
+              <button type="button" className="text-slate-400" onClick={() => setApps(null)}>✕</button>
             </div>
+
+            <div className="mb-4 rounded-xl border border-brand-100 bg-brand-50/50 p-3 text-xs text-slate-600">
+              <strong className="text-brand-800">Quy trình AI (giống Admin):</strong> nhập tiêu chuẩn →
+              <em> AI quét hồ sơ</em> → xem nhóm lý do → chỉnh sửa → <em>Gửi yêu cầu cập nhật</em> cho SV
+              hoặc Duyệt / Từ chối sau khi check lại.
+            </div>
+
+            <label className="mb-3 block text-xs font-semibold text-slate-700">
+              Tiêu chuẩn screening (bắt buộc trước khi quét)
+              <textarea
+                className="input-base mt-1 min-h-[5rem] text-sm"
+                value={screeningCriteria}
+                onChange={(e) => setScreeningCriteria(e.target.value)}
+                placeholder="VD: Sinh viên năm 3–4 CNTT, GPA ≥ 3.0, biết React/Java, có CV PDF rõ ràng, ưu tiên có dự án thực tế…"
+              />
+            </label>
+            <div className="mb-4 flex flex-wrap gap-2">
+              <button type="button" className="btn-accent px-4 py-2 text-xs" disabled={scanningApps} onClick={runAppAiScan}>
+                {scanningApps ? 'Đang quét AI…' : 'AI quét hồ sơ SV'}
+              </button>
+              <button type="button" className="btn-ghost px-3 py-2 text-xs" onClick={reloadApps}>Làm mới danh sách</button>
+            </div>
+
+            {appScanBatch && (
+              <div className="mb-5 space-y-4">
+                <p className="text-sm font-bold text-slate-800">
+                  Kết quả AI — {appScanBatch.scannedCount} hồ sơ
+                  <span className="ml-2 text-xs font-normal text-slate-400">
+                    (Đạt {appScanBatch.approveGroup?.length || 0} · Xem lại {appScanBatch.reviewGroup?.length || 0} · Từ chối gợi ý {appScanBatch.rejectGroup?.length || 0})
+                  </span>
+                </p>
+                {[
+                  { key: 'approveGroup', label: 'Nhóm ĐẠT (APPROVE)', tone: 'border-emerald-200 bg-emerald-50/60', chip: 'bg-emerald-50 text-emerald-700' },
+                  { key: 'reviewGroup', label: 'Nhóm CẦN BỔ SUNG (REVIEW)', tone: 'border-amber-200 bg-amber-50/60', chip: 'bg-amber-50 text-amber-700' },
+                  { key: 'rejectGroup', label: 'Nhóm GỢI Ý TỪ CHỐI (REJECT)', tone: 'border-rose-200 bg-rose-50/60', chip: 'bg-rose-50 text-rose-700' },
+                ].map((g) => {
+                  const list = appScanBatch[g.key] || []
+                  if (!list.length) return null
+                  return (
+                    <div key={g.key} className={`rounded-xl border p-3 ${g.tone}`}>
+                      <h3 className="mb-2 text-sm font-bold text-slate-800">{g.label} · {list.length}</h3>
+                      <div className="space-y-3">
+                        {list.map((r) => (
+                          <div key={r.appId} className="rounded-lg border border-white/80 bg-white/90 p-3 shadow-sm">
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <div>
+                                <p className="text-sm font-semibold">{r.studentName || r.studentEmail}</p>
+                                <p className="text-xs text-slate-400">{r.studentEmail}</p>
+                              </div>
+                              <span className={`chip ${g.chip}`}>
+                                {r.verdict} · {Math.round((r.confidence || 0) * 100)}%
+                              </span>
+                            </div>
+                            <p className="mt-2 text-xs text-slate-600">{r.summary}</p>
+                            {!!r.gaps?.length && (
+                              <ul className="mt-1 list-disc pl-4 text-xs text-amber-800">
+                                {r.gaps.map((x, i) => <li key={i}>Thiếu: {x}</li>)}
+                              </ul>
+                            )}
+                            {!!r.risks?.length && (
+                              <ul className="mt-1 list-disc pl-4 text-xs text-rose-700">
+                                {r.risks.map((x, i) => <li key={i}>{x}</li>)}
+                              </ul>
+                            )}
+                            {!!r.recommendations?.length && (
+                              <ul className="mt-1 list-disc pl-4 text-xs text-brand-700">
+                                {r.recommendations.map((x, i) => <li key={i}>Cần: {x}</li>)}
+                              </ul>
+                            )}
+                            <label className="mt-2 block text-[11px] font-semibold text-slate-600">
+                              Lý do gửi sinh viên (có thể sửa)
+                              <textarea
+                                className="input-base mt-1 min-h-[3.5rem] text-xs"
+                                value={appReasons[r.appId] || ''}
+                                onChange={(e) => setAppReasons((m) => ({ ...m, [r.appId]: e.target.value }))}
+                              />
+                            </label>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              <button type="button" className="btn-accent px-3 py-1.5 text-[11px]" onClick={() => sendAppUpdate(r.appId)}>
+                                Gửi yêu cầu cập nhật
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-primary px-3 py-1.5 text-[11px]"
+                                onClick={async () => {
+                                  if (r.appStatus === 'SUBMITTED') await changeApp(r.appId, 'REVIEWING')
+                                  await changeApp(r.appId, 'INTERVIEW')
+                                }}
+                              >
+                                Mời phỏng vấn
+                              </button>
+                              <button type="button" className="btn-ghost px-3 py-1.5 text-[11px] text-rose-600" onClick={() => rejectAppWithReason(r.appId)}>
+                                Từ chối + gửi lý do
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            <h3 className="mb-2 text-sm font-bold text-slate-700">Danh sách ứng tuyển</h3>
             <div className="space-y-2">
               {apps.items.map((a) => (
-                <div key={a.appId} className="flex items-center justify-between rounded-lg border border-slate-100 p-2">
-                  <div className="text-sm">
-                    <p className="font-medium">{a.studentName || a.studentEmail}</p>
-                    <p className="text-xs text-slate-400">Nộp {fmtDate(a.appliedAt)}</p>
+                <div key={a.appId} className="rounded-lg border border-slate-100 p-3">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="text-sm">
+                      <p className="font-medium">{a.studentName || a.studentEmail}</p>
+                      <p className="text-xs text-slate-400">
+                        {a.studentEmail} · Nộp {fmtDate(a.appliedAt)}
+                        {a.university ? ` · ${a.university}` : ''}
+                        {a.major ? ` · ${a.major}` : ''}
+                      </p>
+                    </div>
+                    <select className="input-base w-40" value={a.status} onChange={(e) => changeApp(a.appId, e.target.value)}>
+                      {['SUBMITTED', 'REVIEWING', 'INTERVIEW', 'ACCEPTED', 'REJECTED', 'WITHDRAWN'].map((s) => (
+                        <option key={s} value={s}>{STATUS_LABELS[s] || s}</option>
+                      ))}
+                    </select>
                   </div>
-                  <select className="input-base w-40" value={a.status} onChange={(e) => changeApp(a.appId, e.target.value)}>
-                    {['SUBMITTED', 'REVIEWING', 'INTERVIEW', 'ACCEPTED', 'REJECTED', 'WITHDRAWN'].map((s) => <option key={s} value={s}>{STATUS_LABELS[s] || s}</option>)}
-                  </select>
+                  {(a.aiModerationNote || a.providerNote || a.rejectionReason) && (
+                    <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900 whitespace-pre-wrap">
+                      {a.aiModerationNote || a.providerNote || a.rejectionReason}
+                    </p>
+                  )}
                 </div>
               ))}
               {apps.items.length === 0 && <p className="text-sm text-slate-400">Chưa có ứng tuyển.</p>}
