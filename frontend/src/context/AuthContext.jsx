@@ -36,6 +36,23 @@ export function AuthProvider({ children }) {
   }
 
   const register = async (payload) => {
+    if (payload?.role === 'PROVIDER') {
+      const { data } = await api.post('/auth/providers/register', {
+        orgName: payload.orgName || payload.fullName,
+        website: payload.website || undefined,
+        description: payload.description || undefined,
+        contactEmail: payload.email,
+        contactPhone: payload.contactPhone || undefined,
+        taxCode: payload.taxCode || undefined,
+        address: payload.address || undefined,
+        industry: payload.industry || undefined,
+        companySize: payload.companySize || undefined,
+        contactFullName: payload.fullName,
+        password: payload.password,
+        documents: payload.documents,
+      })
+      return data
+    }
     const { data } = await api.post('/auth/register', payload)
     return data
   }

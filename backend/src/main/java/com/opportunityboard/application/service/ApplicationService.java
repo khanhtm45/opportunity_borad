@@ -28,6 +28,7 @@ public class ApplicationService {
     private final OrgMemberRepository orgMemberRepository;
     private final ApplicationStatusHistoryRepository historyRepository;
     private final NotificationService notificationService;
+    private final StudentProfileService studentProfileService;
     private final CurrentUser currentUser;
 
     /** F04.1: Sinh viên nộp CV nội bộ. Chặn EXTERNAL / trùng / quá hạn. */
@@ -46,9 +47,16 @@ public class ApplicationService {
         if (applicationRepository.existsByOpportunityOppIdAndStudentUserId(oppId, student.getUserId()))
             throw new ConflictException("Bạn đã nộp opportunity này");
 
+        String cv = (cvFile != null && !cvFile.isBlank())
+                ? cvFile.trim()
+                : studentProfileService.resolveCvUrlForCurrentStudent();
+        if (cv == null || cv.isBlank()) {
+            throw new BadRequestException("Cần tải CV lên hồ sơ cá nhân trước khi nộp đơn (/me/profile)");
+        }
+
         Application app = Application.builder()
                 .opportunity(o).student(student).isExternal(false)
-                .cvFile(cvFile).coverLetter(coverLetter)
+                .cvFile(cv).coverLetter(coverLetter)
                 .status(AppStatus.SUBMITTED).appliedAt(Instant.now())
                 .build();
         app = applicationRepository.save(app);

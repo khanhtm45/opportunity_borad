@@ -1,9 +1,12 @@
 package com.opportunityboard.interface_http.controller;
 
+import com.opportunityboard.application.dto.student.StudentProfileUpdateRequest;
 import com.opportunityboard.application.service.ApplicationService;
 import com.opportunityboard.application.service.SavedOpportunityService;
+import com.opportunityboard.application.service.StudentProfileService;
 import com.opportunityboard.common.response.PagedResponse;
 import com.opportunityboard.security.CurrentUser;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,7 +21,20 @@ public class StudentController {
 
     private final ApplicationService applicationService;
     private final SavedOpportunityService savedService;
+    private final StudentProfileService studentProfileService;
     private final CurrentUser currentUser;
+
+    @GetMapping("/me/profile")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<?> myProfile() {
+        return ResponseEntity.ok(studentProfileService.getMine());
+    }
+
+    @PutMapping("/me/profile")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<?> updateProfile(@Valid @RequestBody StudentProfileUpdateRequest body) {
+        return ResponseEntity.ok(studentProfileService.updateMine(body));
+    }
 
     // F04.1 apply internal
     @PostMapping("/opportunities/{id}/apply")

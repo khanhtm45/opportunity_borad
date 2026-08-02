@@ -13,7 +13,7 @@ CREATE EXTENSION IF NOT EXISTS "pg_trgm";     -- cho full-text / LIKE tối ưu 
 CREATE TYPE user_role        AS ENUM ('STUDENT', 'PROVIDER', 'ADMIN');
 CREATE TYPE user_status      AS ENUM ('ACTIVE', 'LOCKED', 'PENDING_VERIFICATION');
 CREATE TYPE auth_provider    AS ENUM ('EMAIL', 'GOOGLE', 'SSO_SCHOOL');
-CREATE TYPE org_verified     AS ENUM ('PENDING', 'VERIFIED', 'REJECTED');
+CREATE TYPE org_verified     AS ENUM ('PENDING', 'VERIFIED', 'REJECTED', 'NEEDS_UPDATE');
 
 CREATE TYPE opp_status       AS ENUM ('DRAFT', 'PENDING', 'APPROVED', 'REJECTED', 'HIDDEN', 'CLOSED', 'EXPIRED');
 CREATE TYPE apply_mode       AS ENUM ('INTERNAL', 'EXTERNAL');
@@ -21,7 +21,7 @@ CREATE TYPE work_type        AS ENUM ('ONLINE', 'OFFLINE', 'HYBRID');
 CREATE TYPE location_type    AS ENUM ('HA_NOI', 'TP_HCM', 'DA_NANG', 'TOAN_QUOC', 'QUOC_TE', 'KHAC');
 
 CREATE TYPE app_status       AS ENUM ('SUBMITTED', 'REVIEWING', 'INTERVIEW', 'ACCEPTED', 'REJECTED', 'WITHDRAWN');
-CREATE TYPE notif_type       AS ENUM ('NEW_OPP', 'DEADLINE_ALERT', 'APP_STATUS', 'PENDING_REVIEW', 'OPP_REJECTED', 'OPP_APPROVED');
+CREATE TYPE notif_type       AS ENUM ('NEW_OPP', 'DEADLINE_ALERT', 'APP_STATUS', 'PENDING_REVIEW', 'OPP_REJECTED', 'OPP_APPROVED', 'ORG_UPDATE_REQUIRED', 'OPP_UPDATE_REQUIRED');
 CREATE TYPE notif_channel    AS ENUM ('EMAIL', 'PUSH', 'IN_APP');
 CREATE TYPE notif_frequency  AS ENUM ('INSTANT', 'DAILY_DIGEST', 'WEEKLY');
 CREATE TYPE moderation_action AS ENUM ('APPROVED', 'REJECTED');
@@ -80,6 +80,8 @@ CREATE TABLE organizations (
     verified_status org_verified NOT NULL DEFAULT 'PENDING',
     verified_at     TIMESTAMP,
     verified_by     UUID REFERENCES users(user_id),        -- admin duyệt
+    verification_note TEXT,                                  -- AI/Admin yêu cầu cập nhật
+    ai_scanned_at   TIMESTAMP,
     created_at      TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at      TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -151,6 +153,8 @@ CREATE TABLE opportunities (
     deadline         TIMESTAMP NOT NULL,
     status           opp_status NOT NULL DEFAULT 'DRAFT',
     rejection_reason TEXT,
+    ai_moderation_note TEXT,                              -- AI/Admin yêu cầu cập nhật tin
+    ai_scanned_at    TIMESTAMP,
     moderated_by     UUID REFERENCES users(user_id),
     moderated_at     TIMESTAMP,
     is_featured      BOOLEAN NOT NULL DEFAULT FALSE,      -- Mục 3: Featured
@@ -296,6 +300,61 @@ CREATE TABLE audit_logs (
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 CREATE INDEX idx_audit_actor ON audit_logs(actor_id, created_at);
+
+-- ---------------------------------------------------------------------------
+-- 12. PROVIDER DOCUMENTS (hồ sơ org + hồ sơ liên quan tin đăng)
+-- ---------------------------------------------------------------------------
+CREATE TYPE org_doc_type AS ENUM ('BUSINESS_LICENSE', 'TAX_CODE', 'IDENTITY', 'OTHER');
+CREATE TYPE opp_doc_type AS ENUM ('PROGRAM_PROOF', 'PARTNERSHIP_LETTER', 'OTHER');
+
+CREATE TABLE org_documents (
+    doc_id     UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    org_id     UUID NOT NULL REFERENCES organizations(org_id) ON DELETE CASCADE,
+    doc_type   org_doc_type NOT NULL,
+    title      VARCHAR(200) NOT NULL,
+    file_url   VARCHAR(512) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_org_documents_org ON org_documents(org_id);
+
+CREATE TABLE opportunity_documents (
+    doc_id     UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    opp_id     UUID NOT NULL REFERENCES opportunities(opp_id) ON DELETE CASCADE,
+    doc_type   opp_doc_type NOT NULL,
+    title      VARCHAR(200) NOT NULL,
+    file_url   VARCHAR(512) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_opp_documents_opp ON opportunity_documents(opp_id);
+
+-- ---------------------------------------------------------------------------
+-- 13. THUỘC TÍNH KIỂU TOPCV (tin đăng + tổ chức)
+-- ---------------------------------------------------------------------------
+CREATE TYPE job_level AS ENUM ('INTERN', 'STAFF', 'TEAM_LEAD', 'MANAGER', 'DIRECTOR', 'OTHER');
+CREATE TYPE experience_level AS ENUM ('NONE', 'UNDER_ONE_YEAR', 'ONE_TO_TWO', 'TWO_TO_THREE', 'THREE_TO_FIVE', 'FIVE_PLUS');
+CREATE TYPE education_level AS ENUM ('NONE', 'HIGH_SCHOOL', 'INTERMEDIATE', 'COLLEGE', 'UNIVERSITY', 'POSTGRAD');
+CREATE TYPE employment_type AS ENUM ('FULL_TIME', 'PART_TIME', 'CONTRACT', 'FREELANCE', 'OTHER');
+CREATE TYPE company_size AS ENUM ('SIZE_1_10', 'SIZE_11_50', 'SIZE_51_200', 'SIZE_201_500', 'SIZE_500_PLUS', 'UNKNOWN');
+
+ALTER TABLE opportunities
+    ADD COLUMN IF NOT EXISTS job_level job_level,
+    ADD COLUMN IF NOT EXISTS experience_level experience_level,
+    ADD COLUMN IF NOT EXISTS education_level education_level,
+    ADD COLUMN IF NOT EXISTS headcount INT,
+    ADD COLUMN IF NOT EXISTS employment_type employment_type,
+    ADD COLUMN IF NOT EXISTS salary_min BIGINT,
+    ADD COLUMN IF NOT EXISTS salary_max BIGINT,
+    ADD COLUMN IF NOT EXISTS salary_currency VARCHAR(10) DEFAULT 'VND',
+    ADD COLUMN IF NOT EXISTS salary_negotiable BOOLEAN NOT NULL DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS address_detail VARCHAR(500),
+    ADD COLUMN IF NOT EXISTS working_schedule TEXT,
+    ADD COLUMN IF NOT EXISTS skills TEXT;
+
+ALTER TABLE organizations
+    ADD COLUMN IF NOT EXISTS tax_code VARCHAR(40),
+    ADD COLUMN IF NOT EXISTS address VARCHAR(500),
+    ADD COLUMN IF NOT EXISTS industry VARCHAR(200),
+    ADD COLUMN IF NOT EXISTS company_size company_size;
 
 -- ---------------------------------------------------------------------------
 -- VIEW: trạng thái hiển thị dẫn xuất (Mục 3.1: tách status lưu vs hiển thị)

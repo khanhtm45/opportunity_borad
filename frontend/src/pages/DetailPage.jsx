@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import api from '../api/client.js'
+import { studentApi } from '../api/student.js'
 import { useAuth } from '../context/AuthContext.jsx'
 import {
   CATEGORY_LABELS, CATEGORY_STYLES, STATUS_LABELS, STATUS_STYLES,
-  WORKTYPE_LABELS, LOCATION_LABELS, fmtDate, fmtDateTime,
+  WORKTYPE_LABELS, LOCATION_LABELS, EMPLOYMENT_TYPE_LABELS, JOB_LEVEL_LABELS,
+  EXPERIENCE_LEVEL_LABELS, EDUCATION_LEVEL_LABELS, COMPANY_SIZE_LABELS,
+  fmtDate, fmtDateTime,
 } from '../lib/constants.js'
 import { InlineLoader } from '../components/Splash.jsx'
 import { asset } from '../lib/assets.js'
@@ -48,10 +51,18 @@ export default function DetailPage() {
     if (!user) return navigate('/login')
     if (user.role !== 'STUDENT') return setMsg('Chỉ sinh viên mới được ứng tuyển')
     try {
-      await api.post(`/opportunities/${opp.oppId}/apply`)
-      setMsg('✅ Đã nộp hồ sơ thành công!')
+      const profile = await studentApi.profile().catch(() => null)
+      if (!profile?.hasCv) {
+        setMsg('⚠️ Cần tải CV lên hồ sơ trước khi nộp đơn')
+        navigate('/me/profile')
+        return
+      }
+      await studentApi.apply(opp.oppId)
+      setMsg('✅ Đã nộp hồ sơ thành công (kèm CV từ hồ sơ)!')
     } catch (e) {
-      setMsg(e.response?.data?.error?.message || 'Lỗi khi nộp')
+      const m = e.response?.data?.error?.message || 'Lỗi khi nộp'
+      setMsg(m)
+      if (m.toLowerCase().includes('cv')) navigate('/me/profile')
     }
   }
 
@@ -99,6 +110,8 @@ export default function DetailPage() {
             <span className={`chip ${CATEGORY_STYLES[opp.categoryCode] || 'bg-slate-100'}`}>{CATEGORY_LABELS[opp.categoryCode]}</span>
             <span className="chip bg-slate-100 text-slate-600">{WORKTYPE_LABELS[opp.workType]}</span>
             <span className="chip bg-slate-100 text-slate-600">{LOCATION_LABELS[opp.location]}</span>
+            {opp.employmentType && <span className="chip bg-slate-100 text-slate-600">{EMPLOYMENT_TYPE_LABELS[opp.employmentType] || opp.employmentType}</span>}
+            {opp.jobLevel && <span className="chip bg-slate-100 text-slate-600">{JOB_LEVEL_LABELS[opp.jobLevel] || opp.jobLevel}</span>}
             <span className={`chip ${STATUS_STYLES[opp.displayStatus]}`}>{STATUS_LABELS[opp.displayStatus]}</span>
           </div>
 
@@ -124,8 +137,10 @@ export default function DetailPage() {
         <Section title="Yêu cầu" html={opp.requirements} />
         <Section title="Quyền lợi" html={opp.benefits} />
         {opp.salaryOrReward && <Section title="Lương / giải thưởng" text={opp.salaryOrReward} />}
+        {opp.workingSchedule && <Section title="Thời gian làm việc" text={opp.workingSchedule} />}
         {opp.selectionProcess && <Section title="Quy trình tuyển chọn" text={opp.selectionProcess} />}
         {opp.applicationProcess && <Section title="Quy trình ứng tuyển" text={opp.applicationProcess} />}
+        {opp.skills && <Section title="Kỹ năng" text={opp.skills} />}
       </div>
 
       <aside className="space-y-4">
@@ -133,11 +148,26 @@ export default function DetailPage() {
           <h3 className="mb-3 text-sm font-bold text-slate-700">Thông tin nhanh</h3>
           <Row label="Hạn nộp" value={fmtDate(opp.deadline)} />
           <Row label="Đăng bởi" value={opp.orgName} />
-          {(opp.orgContactEmail || opp.orgWebsite) && (
+          {opp.salaryNegotiable
+            ? <Row label="Mức lương" value="Thỏa thuận" />
+            : (opp.salaryMin != null || opp.salaryMax != null) && (
+              <Row label="Mức lương" value={`${opp.salaryMin ?? '?'} – ${opp.salaryMax ?? '?'} ${opp.salaryCurrency || 'VND'}`} />
+            )}
+          {opp.headcount != null && <Row label="Số lượng" value={`${opp.headcount} người`} />}
+          {opp.employmentType && <Row label="Loại hình" value={EMPLOYMENT_TYPE_LABELS[opp.employmentType] || opp.employmentType} />}
+          {opp.jobLevel && <Row label="Cấp bậc" value={JOB_LEVEL_LABELS[opp.jobLevel] || opp.jobLevel} />}
+          {opp.experienceLevel && <Row label="Kinh nghiệm" value={EXPERIENCE_LEVEL_LABELS[opp.experienceLevel] || opp.experienceLevel} />}
+          {opp.educationLevel && <Row label="Học vấn" value={EDUCATION_LEVEL_LABELS[opp.educationLevel] || opp.educationLevel} />}
+          {opp.addressDetail && <Row label="Địa chỉ" value={opp.addressDetail} />}
+          {(opp.orgContactEmail || opp.orgWebsite || opp.orgTaxCode) && (
             <>
               {opp.orgContactEmail && <Row label="Email" value={opp.orgContactEmail} />}
               {opp.orgContactPhone && <Row label="SĐT" value={opp.orgContactPhone} />}
               {opp.orgWebsite && <Row label="Website" value={opp.orgWebsite} />}
+              {opp.orgTaxCode && <Row label="MST" value={opp.orgTaxCode} />}
+              {opp.orgAddress && <Row label="Địa chỉ CT" value={opp.orgAddress} />}
+              {opp.orgIndustry && <Row label="Lĩnh vực" value={opp.orgIndustry} />}
+              {opp.orgCompanySize && <Row label="Quy mô" value={COMPANY_SIZE_LABELS[opp.orgCompanySize] || opp.orgCompanySize} />}
             </>
           )}
           <Row label="Lượt xem" value={opp.viewCount} />

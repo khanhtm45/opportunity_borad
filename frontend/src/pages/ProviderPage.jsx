@@ -6,15 +6,30 @@ import { useAuth } from '../context/AuthContext.jsx'
 import { InlineLoader } from '../components/Splash.jsx'
 import {
   CATEGORY_LABELS, OPP_STATUS_STYLES, STATUS_LABELS,
-  WORKTYPE_LABELS, LOCATION_LABELS, fmtDate,
+  WORKTYPE_LABELS, LOCATION_LABELS, EMPLOYMENT_TYPE_LABELS,
+  JOB_LEVEL_LABELS, EXPERIENCE_LEVEL_LABELS, EDUCATION_LEVEL_LABELS, fmtDate,
 } from '../lib/constants.js'
 import { asset } from '../lib/assets.js'
+import FileUploadButton, { mediaSrc } from '../components/FileUploadButton.jsx'
+
+const EMPTY_DOC = { docType: 'PROGRAM_PROOF', title: '', fileUrl: '' }
 
 const EMPTY = {
   title: '', categoryCode: 'INTERNSHIP', workType: 'ONLINE', location: 'TOAN_QUOC',
   deadline: '', description: '', requirements: '', benefits: '',
-  salaryOrReward: '', selectionProcess: '', applyMode: 'INTERNAL',
+  salaryOrReward: '', salaryMin: '', salaryMax: '', salaryCurrency: 'VND', salaryNegotiable: false,
+  selectionProcess: '', applyMode: 'INTERNAL',
+  jobLevel: 'INTERN', experienceLevel: 'NONE', educationLevel: 'UNIVERSITY',
+  headcount: 1, employmentType: 'FULL_TIME',
+  addressDetail: '', workingSchedule: '', skills: '',
   logoUrl: '', bannerUrl: '', externalLink: '', externalRef: '',
+  documents: [{ ...EMPTY_DOC }],
+}
+
+const OPP_DOC_LABELS = {
+  PROGRAM_PROOF: 'Chứng minh chương trình',
+  PARTNERSHIP_LETTER: 'Thư hợp tác / ủy quyền',
+  OTHER: 'Khác',
 }
 
 export default function ProviderPage() {
@@ -29,17 +44,39 @@ export default function ProviderPage() {
   const [msg, setMsg] = useState('')
   const [apps, setApps] = useState(null) // modal danh sách ứng tuyển
   const [appStatus, setAppStatus] = useState({})
+  const [orgDocs, setOrgDocs] = useState([])
+  const [orgProfile, setOrgProfile] = useState(null)
+  const [orgDocForm, setOrgDocForm] = useState({ docType: 'BUSINESS_LICENSE', title: '', fileUrl: '' })
+  const [orgEdit, setOrgEdit] = useState({
+    orgName: '', taxCode: '', address: '', contactPhone: '', industry: '', logoUrl: '',
+  })
+  const [orgLogoPreview, setOrgLogoPreview] = useState('')
 
   const load = useCallback(() => {
     setLoading(true)
     Promise.all([
       providerApi.list(),
       api.get('/categories').then((r) => r.data).catch(() => []),
+      providerApi.orgDocuments().catch(() => []),
+      providerApi.orgProfile().catch(() => null),
     ])
-      .then(([l, c]) => {
+      .then(([l, c, docs, profile]) => {
         const catArr = Array.isArray(c) ? c : (c?.items || [])
         setList(l || [])
         setCats(catArr)
+        setOrgDocs(Array.isArray(docs) ? docs : [])
+        setOrgProfile(profile)
+        if (profile) {
+          setOrgEdit({
+            orgName: profile.orgName || '',
+            taxCode: profile.taxCode || '',
+            address: profile.address || '',
+            contactPhone: profile.contactPhone || '',
+            industry: profile.industry || '',
+            logoUrl: profile.logoUrl || '',
+          })
+          setOrgLogoPreview(mediaSrc(profile.logoAccessUrl || profile.logoUrl || ''))
+        }
         const approved = l.filter((o) => o.status === 'APPROVED').length
         const pending = l.filter((o) => o.status === 'PENDING').length
         const apps = l.reduce((s, o) => s + (o.applicationCount || 0), 0)
@@ -58,6 +95,17 @@ export default function ProviderPage() {
         setMsg('⚠️ Vui lòng chọn danh mục hợp lệ')
         return
       }
+      const documents = (form.documents || [])
+        .map((d) => ({
+          docType: d.docType || 'PROGRAM_PROOF',
+          title: (d.title || '').trim(),
+          fileUrl: (d.fileUrl || '').trim(),
+        }))
+        .filter((d) => d.title && d.fileUrl)
+      if (documents.length < 1) {
+        setMsg('⚠️ Cần ít nhất 1 hồ sơ liên quan (tiêu đề + URL)')
+        return
+      }
       let deadlineIso
       try { deadlineIso = new Date(form.deadline).toISOString() }
       catch { setMsg('⚠️ Ngày hết hạn không hợp lệ'); return }
@@ -66,6 +114,12 @@ export default function ProviderPage() {
         categoryId: cat.categoryId,
         logoUrl: form.logoUrl || undefined,
         deadline: deadlineIso,
+        salaryMin: form.salaryMin !== '' && form.salaryMin != null ? Number(form.salaryMin) : null,
+        salaryMax: form.salaryMax !== '' && form.salaryMax != null ? Number(form.salaryMax) : null,
+        salaryCurrency: form.salaryCurrency || 'VND',
+        salaryNegotiable: !!form.salaryNegotiable,
+        headcount: form.headcount ? Number(form.headcount) : null,
+        documents,
       }
       if (editing) {
         await providerApi.update(editing.oppId, body)
@@ -77,11 +131,39 @@ export default function ProviderPage() {
         await providerApi.submit(created.oppId)
         setMsg('✅ Đã tạo và gửi duyệt!')
       }
-      setForm(EMPTY); setEditing(null); load()
+      setForm({ ...EMPTY, documents: [{ ...EMPTY_DOC }] }); setEditing(null); load()
     } catch (e2) { setMsg(e2.response?.data?.error?.message || 'Lỗi') }
   }
 
-  const openEdit = (o) => { setEditing(o); setForm({ ...EMPTY, ...o, deadline: (o.deadline || '').slice(0, 10) }); setMsg('') }
+  const setDoc = (idx, patch) => {
+    setForm((f) => {
+      const documents = [...(f.documents || [])]
+      documents[idx] = { ...documents[idx], ...patch }
+      return { ...f, documents }
+    })
+  }
+  const addDoc = () => setForm((f) => ({ ...f, documents: [...(f.documents || []), { ...EMPTY_DOC }] }))
+  const removeDoc = (idx) => setForm((f) => {
+    const documents = (f.documents || []).filter((_, i) => i !== idx)
+    return { ...f, documents: documents.length ? documents : [{ ...EMPTY_DOC }] }
+  })
+
+  const openEdit = async (o) => {
+    setEditing(o)
+    setMsg('')
+    let documents = [{ ...EMPTY_DOC }]
+    try {
+      const docs = await providerApi.oppDocuments(o.oppId)
+      if (docs?.length) {
+        documents = docs.map((d) => ({
+          docType: d.docType || 'PROGRAM_PROOF',
+          title: d.title || '',
+          fileUrl: d.fileUrl || '',
+        }))
+      }
+    } catch { /* keep empty doc row */ }
+    setForm({ ...EMPTY, ...o, deadline: (o.deadline || '').slice(0, 10), documents })
+  }
   const doHide = async (o) => { await (o.status === 'HIDDEN' ? providerApi.show(o.oppId) : providerApi.hide(o.oppId)); load() }
   const doClose = async (o) => { await providerApi.close(o.oppId); load() }
   const doExport = async (oppId) => {
@@ -120,6 +202,113 @@ export default function ProviderPage() {
         </div>
       )}
 
+      {orgProfile?.needsUpdate && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-950 shadow-card">
+          <p className="font-bold">Cần cập nhật hồ sơ tổ chức</p>
+          <p className="mt-1 text-sm">{orgProfile.updateHint}</p>
+          {orgProfile.verificationNote && (
+            <p className="mt-2 text-sm whitespace-pre-wrap">{orgProfile.verificationNote}</p>
+          )}
+          <p className="mt-2 text-xs text-amber-800">
+            Sửa thông tin bên dưới hoặc thêm giấy tờ mới → trạng thái về chờ duyệt lại. Liên hệ Admin nếu cần hỗ trợ.
+          </p>
+        </div>
+      )}
+
+      <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-card">
+        <h2 className="mb-2 text-lg font-bold text-slate-800">Hồ sơ tổ chức</h2>
+        <p className="mb-1 text-xs text-slate-400">
+          Trạng thái: <span className="font-semibold text-slate-700">{orgProfile?.verifiedStatus || '—'}</span>
+          {orgProfile && !orgProfile.needsUpdate && orgProfile.verifiedStatus === 'PENDING' && ' — đang chờ Admin/AI kiểm duyệt'}
+          {orgProfile?.verifiedStatus === 'VERIFIED' && ' — đã xác minh'}
+        </p>
+        <p className="mb-3 text-xs text-slate-400">Cần ≥1 hồ sơ để Admin xác minh tổ chức trước khi đăng tin.</p>
+
+        <div className="mb-4 grid gap-2 md:grid-cols-2">
+          <div className="md:col-span-2 flex flex-wrap items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/80 p-3">
+            {orgLogoPreview ? (
+              <img src={orgLogoPreview} alt="" className="h-14 w-14 rounded-xl object-cover border border-slate-200" />
+            ) : (
+              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-slate-200 text-xs text-slate-500">Avatar</div>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-slate-700">Logo / avatar tổ chức</p>
+              <p className="text-[11px] text-slate-400">Upload S3 private + AES256 — không public bucket</p>
+              <FileUploadButton
+                purpose="avatar"
+                accept="image/png,image/jpeg,image/webp"
+                label="Chọn ảnh avatar"
+                className="btn-ghost mt-1 text-xs"
+                onUploaded={(up) => {
+                  setOrgEdit((e) => ({ ...e, logoUrl: up.url }))
+                  setOrgLogoPreview(mediaSrc(up.viewUrl))
+                  setMsg('✅ Đã upload avatar (nhớ bấm Lưu thông tin tổ chức)')
+                }}
+              />
+            </div>
+          </div>
+          <input className="input-base" placeholder="Tên tổ chức" value={orgEdit.orgName}
+            onChange={(e) => setOrgEdit({ ...orgEdit, orgName: e.target.value })} />
+          <input className="input-base" placeholder="Mã số thuế" value={orgEdit.taxCode}
+            onChange={(e) => setOrgEdit({ ...orgEdit, taxCode: e.target.value })} />
+          <input className="input-base md:col-span-2" placeholder="Địa chỉ" value={orgEdit.address}
+            onChange={(e) => setOrgEdit({ ...orgEdit, address: e.target.value })} />
+          <input className="input-base" placeholder="SĐT liên hệ" value={orgEdit.contactPhone}
+            onChange={(e) => setOrgEdit({ ...orgEdit, contactPhone: e.target.value })} />
+          <input className="input-base" placeholder="Ngành nghề" value={orgEdit.industry}
+            onChange={(e) => setOrgEdit({ ...orgEdit, industry: e.target.value })} />
+          <button type="button" className="btn-accent md:col-span-2" onClick={async () => {
+            try {
+              await providerApi.updateOrgProfile(orgEdit)
+              setMsg('✅ Đã cập nhật thông tin tổ chức — chờ kiểm duyệt lại nếu trước đó bị yêu cầu sửa')
+              load()
+            } catch (e2) { setMsg(e2.response?.data?.error?.message || 'Lỗi cập nhật tổ chức') }
+          }}>Lưu thông tin tổ chức</button>
+        </div>
+
+        <div className="mb-3 space-y-1">
+          {orgDocs.map((d) => (
+            <div key={d.docId} className="flex items-center justify-between rounded-lg border border-slate-100 px-3 py-2 text-sm">
+              <a className="truncate text-brand-600 hover:underline" href={mediaSrc(d.accessUrl || d.fileUrl)} target="_blank" rel="noreferrer">{d.title} ({d.docType})</a>
+              <button type="button" className="chip-btn" onClick={() => providerApi.deleteOrgDocument(d.docId).then(load).catch((e2) => setMsg(e2.response?.data?.error?.message || 'Không xoá được'))}>Xoá</button>
+            </div>
+          ))}
+          {orgDocs.length === 0 && <p className="text-sm text-slate-400">Chưa có hồ sơ tổ chức.</p>}
+        </div>
+        <div className="grid gap-2 md:grid-cols-[10rem_1fr_1fr_auto_auto]">
+          <select className="input-base" value={orgDocForm.docType} onChange={(e) => setOrgDocForm({ ...orgDocForm, docType: e.target.value })}>
+            <option value="BUSINESS_LICENSE">Giấy phép KD</option>
+            <option value="TAX_CODE">MST</option>
+            <option value="IDENTITY">Định danh</option>
+            <option value="OTHER">Khác</option>
+          </select>
+          <input className="input-base" placeholder="Tiêu đề" value={orgDocForm.title} onChange={(e) => setOrgDocForm({ ...orgDocForm, title: e.target.value })} />
+          <input className="input-base" placeholder="ob-s3://… hoặc https://" value={orgDocForm.fileUrl} onChange={(e) => setOrgDocForm({ ...orgDocForm, fileUrl: e.target.value })} />
+          <FileUploadButton
+            purpose="org-doc"
+            accept="image/*,.pdf,.doc,.docx"
+            label="Upload file"
+            onUploaded={(up) => {
+              setOrgDocForm((f) => ({
+                ...f,
+                fileUrl: up.url,
+                title: f.title || up.key?.split('/').pop() || 'Hồ sơ',
+              }))
+              setMsg('✅ Đã upload hồ sơ (S3 mã hóa) — bấm Thêm để lưu')
+            }}
+          />
+          <button type="button" className="btn-primary" onClick={async () => {
+            if (!orgDocForm.title.trim() || !orgDocForm.fileUrl.trim()) { setMsg('⚠️ Điền đủ tiêu đề + file/URL hồ sơ tổ chức'); return }
+            try {
+              await providerApi.addOrgDocument(orgDocForm)
+              setOrgDocForm({ docType: 'BUSINESS_LICENSE', title: '', fileUrl: '' })
+              setMsg('✅ Đã thêm hồ sơ — chờ kiểm duyệt lại')
+              load()
+            } catch (e2) { setMsg(e2.response?.data?.error?.message || 'Lỗi thêm hồ sơ') }
+          }}>Thêm</button>
+        </div>
+      </div>
+
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Form tạo/sửa */}
         <div>
@@ -127,8 +316,14 @@ export default function ProviderPage() {
           <form onSubmit={submitForm} className="space-y-3 rounded-2xl border border-slate-100 bg-white p-5 shadow-card">
             {msg && <div className="rounded-lg bg-brand-50 px-3 py-2 text-sm text-brand-700">{msg}</div>}
             <input className="input-base" placeholder="Tiêu đề" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
-            <input className="input-base" placeholder="Logo URL (https://... để trống dùng logo tổ chức)" value={form.logoUrl || ''} onChange={(e) => setForm({ ...form, logoUrl: e.target.value })} />
-            <input className="input-base" placeholder="Banner URL (ảnh hero/card)" value={form.bannerUrl || ''} onChange={(e) => setForm({ ...form, bannerUrl: e.target.value })} />
+            <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+              <input className="input-base" placeholder="Logo tin (ob-s3://… — để trống dùng avatar org)" value={form.logoUrl || ''} onChange={(e) => setForm({ ...form, logoUrl: e.target.value })} />
+              <FileUploadButton purpose="logo" accept="image/*" label="Upload logo" onUploaded={(up) => setForm((f) => ({ ...f, logoUrl: up.url }))} />
+            </div>
+            <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+              <input className="input-base" placeholder="Banner tin (ob-s3://…)" value={form.bannerUrl || ''} onChange={(e) => setForm({ ...form, bannerUrl: e.target.value })} />
+              <FileUploadButton purpose="banner" accept="image/*" label="Upload banner" onUploaded={(up) => setForm((f) => ({ ...f, bannerUrl: up.url }))} />
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <select className="input-base" value={form.categoryCode} onChange={(e) => setForm({ ...form, categoryCode: e.target.value })}>
                 {Object.entries(CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -143,20 +338,72 @@ export default function ProviderPage() {
                 <option value="INTERNAL">Nộp nội bộ</option>
                 <option value="EXTERNAL">Link ngoài</option>
               </select>
+              <select className="input-base" value={form.employmentType} onChange={(e) => setForm({ ...form, employmentType: e.target.value })}>
+                {Object.entries(EMPLOYMENT_TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+              <select className="input-base" value={form.jobLevel} onChange={(e) => setForm({ ...form, jobLevel: e.target.value })}>
+                {Object.entries(JOB_LEVEL_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+              <select className="input-base" value={form.experienceLevel} onChange={(e) => setForm({ ...form, experienceLevel: e.target.value })}>
+                {Object.entries(EXPERIENCE_LEVEL_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+              <select className="input-base" value={form.educationLevel} onChange={(e) => setForm({ ...form, educationLevel: e.target.value })}>
+                {Object.entries(EDUCATION_LEVEL_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
             </div>
-            <input className="input-base" type="date" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} required />
+            <div className="grid grid-cols-2 gap-3">
+              <input className="input-base" type="number" min={1} placeholder="Số lượng tuyển" value={form.headcount} onChange={(e) => setForm({ ...form, headcount: e.target.value })} />
+              <input className="input-base" type="date" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} required />
+            </div>
+            <input className="input-base" placeholder="Địa chỉ chi tiết (quận/huyện…)" value={form.addressDetail || ''} onChange={(e) => setForm({ ...form, addressDetail: e.target.value })} />
+            <input className="input-base" placeholder="Kỹ năng (cách nhau bởi dấu phẩy)" value={form.skills || ''} onChange={(e) => setForm({ ...form, skills: e.target.value })} />
             <textarea className="input-base" rows={3} placeholder="Mô tả" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
             <textarea className="input-base" rows={2} placeholder="Yêu cầu" value={form.requirements} onChange={(e) => setForm({ ...form, requirements: e.target.value })} />
             <textarea className="input-base" rows={2} placeholder="Quyền lợi" value={form.benefits} onChange={(e) => setForm({ ...form, benefits: e.target.value })} />
-            <textarea className="input-base" rows={2} placeholder="Lương / giải thưởng" value={form.salaryOrReward || ''} onChange={(e) => setForm({ ...form, salaryOrReward: e.target.value })} />
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <input className="input-base" type="number" min={0} placeholder="Lương min" value={form.salaryMin} onChange={(e) => setForm({ ...form, salaryMin: e.target.value })} />
+              <input className="input-base" type="number" min={0} placeholder="Lương max" value={form.salaryMax} onChange={(e) => setForm({ ...form, salaryMax: e.target.value })} />
+              <select className="input-base" value={form.salaryCurrency} onChange={(e) => setForm({ ...form, salaryCurrency: e.target.value })}>
+                <option value="VND">VND</option>
+                <option value="USD">USD</option>
+              </select>
+              <label className="flex items-center gap-2 text-sm text-slate-600">
+                <input type="checkbox" checked={!!form.salaryNegotiable} onChange={(e) => setForm({ ...form, salaryNegotiable: e.target.checked })} />
+                Thỏa thuận
+              </label>
+            </div>
+            <textarea className="input-base" rows={2} placeholder="Lương / giải thưởng (mô tả thêm)" value={form.salaryOrReward || ''} onChange={(e) => setForm({ ...form, salaryOrReward: e.target.value })} />
+            <textarea className="input-base" rows={2} placeholder="Thời gian làm việc (T2–T6…)" value={form.workingSchedule || ''} onChange={(e) => setForm({ ...form, workingSchedule: e.target.value })} />
             <textarea className="input-base" rows={2} placeholder="Quy trình tuyển chọn / lịch trình" value={form.selectionProcess || ''} onChange={(e) => setForm({ ...form, selectionProcess: e.target.value })} />
             {form.applyMode === 'EXTERNAL' && (
               <input className="input-base" placeholder="External link (https://...)" value={form.externalLink || ''} onChange={(e) => setForm({ ...form, externalLink: e.target.value })} />
             )}
             <input className="input-base" placeholder="Mã tham chiếu ngoài (case index, tùy chọn)" value={form.externalRef || ''} onChange={(e) => setForm({ ...form, externalRef: e.target.value })} />
+            <div className="space-y-2 rounded-xl border border-slate-100 bg-slate-50/80 p-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-slate-700">Hồ sơ liên quan <span className="font-normal text-slate-400">(bắt buộc ≥1)</span></p>
+                <button type="button" className="chip-btn" onClick={addDoc}>+ Thêm</button>
+              </div>
+              {(form.documents || []).map((d, idx) => (
+                <div key={idx} className="grid gap-2 rounded-lg border border-slate-100 bg-white p-2 sm:grid-cols-[9rem_1fr_1fr_auto_auto]">
+                  <select className="input-base" value={d.docType} onChange={(e) => setDoc(idx, { docType: e.target.value })}>
+                    {Object.entries(OPP_DOC_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  </select>
+                  <input className="input-base" placeholder="Tiêu đề hồ sơ" value={d.title} onChange={(e) => setDoc(idx, { title: e.target.value })} required />
+                  <input className="input-base" placeholder="ob-s3://… hoặc https://" value={d.fileUrl} onChange={(e) => setDoc(idx, { fileUrl: e.target.value })} required />
+                  <FileUploadButton
+                    purpose="opp-doc"
+                    accept="image/*,.pdf,.doc,.docx"
+                    label="Upload"
+                    onUploaded={(up) => setDoc(idx, { fileUrl: up.url, title: d.title || up.key?.split('/').pop() || d.title })}
+                  />
+                  <button type="button" className="chip-btn" onClick={() => removeDoc(idx)} disabled={(form.documents || []).length <= 1}>Xoá</button>
+                </div>
+              ))}
+            </div>
             <div className="flex gap-2">
               <button className="btn-primary flex-1">{editing ? 'Lưu' : 'Tạo & Gửi duyệt'}</button>
-              {editing && <button type="button" className="btn-ghost" onClick={() => { setEditing(null); setForm(EMPTY) }}>Huỷ</button>}
+              {editing && <button type="button" className="btn-ghost" onClick={() => { setEditing(null); setForm({ ...EMPTY, documents: [{ ...EMPTY_DOC }] }) }}>Huỷ</button>}
             </div>
           </form>
         </div>
@@ -172,6 +419,11 @@ export default function ProviderPage() {
                     <p className="text-sm font-semibold text-slate-700">{o.title}</p>
                     <span className={`chip ${OPP_STATUS_STYLES[o.status] || 'bg-slate-100'}`}>{STATUS_LABELS[o.status] || o.status}</span>
                   </div>
+                  {(o.aiModerationNote || (o.status === 'DRAFT' && o.rejectionReason)) && (
+                    <p className="mt-2 rounded-lg bg-amber-50 px-2 py-1.5 text-xs text-amber-900">
+                      Cần cập nhật: {o.aiModerationNote || o.rejectionReason}
+                    </p>
+                  )}
                   <p className="text-xs text-slate-400">Hạn {fmtDate(o.deadline)} · {o.applicationCount || 0} ứng tuyển{o.externalRef ? ` · Mã: ${o.externalRef}` : ''}</p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     <button className="chip-btn" onClick={() => openEdit(o)}>Sửa</button>

@@ -13,6 +13,84 @@ export const WORKTYPE_LABELS = {
   OFFLINE: 'Offline',
   HYBRID: 'Hybrid',
 }
+export const EMPLOYMENT_TYPE_LABELS = {
+  FULL_TIME: 'Toàn thời gian',
+  PART_TIME: 'Bán thời gian',
+  CONTRACT: 'Hợp đồng',
+  FREELANCE: 'Freelance',
+  OTHER: 'Khác',
+}
+export const JOB_LEVEL_LABELS = {
+  INTERN: 'Thực tập sinh',
+  STAFF: 'Nhân viên',
+  TEAM_LEAD: 'Trưởng nhóm',
+  MANAGER: 'Trưởng/Phó phòng',
+  DIRECTOR: 'Giám đốc',
+  OTHER: 'Khác',
+}
+export const EXPERIENCE_LEVEL_LABELS = {
+  NONE: 'Không yêu cầu',
+  UNDER_ONE_YEAR: 'Dưới 1 năm',
+  ONE_TO_TWO: '1–2 năm',
+  TWO_TO_THREE: '2–3 năm',
+  THREE_TO_FIVE: '3–5 năm',
+  FIVE_PLUS: 'Trên 5 năm',
+}
+export const EDUCATION_LEVEL_LABELS = {
+  NONE: 'Không yêu cầu',
+  HIGH_SCHOOL: 'THPT',
+  INTERMEDIATE: 'Trung cấp',
+  COLLEGE: 'Cao đẳng',
+  UNIVERSITY: 'Đại học',
+  POSTGRAD: 'Sau đại học',
+}
+export const COMPANY_SIZE_LABELS = {
+  SIZE_1_10: '1–10 nhân sự',
+  SIZE_11_50: '11–50 nhân sự',
+  SIZE_51_200: '51–200 nhân sự',
+  SIZE_201_500: '201–500 nhân sự',
+  SIZE_500_PLUS: 'Trên 500 nhân sự',
+  UNKNOWN: 'Chưa xác định',
+}
+export const EMPLOYMENT_TYPE_LABELS = {
+  FULL_TIME: 'Toàn thời gian',
+  PART_TIME: 'Bán thời gian',
+  CONTRACT: 'Hợp đồng',
+  FREELANCE: 'Freelance',
+  OTHER: 'Khác',
+}
+export const JOB_LEVEL_LABELS = {
+  INTERN: 'Thực tập sinh',
+  STAFF: 'Nhân viên',
+  TEAM_LEAD: 'Trưởng nhóm',
+  MANAGER: 'Trưởng/Phó phòng',
+  DIRECTOR: 'Giám đốc',
+  OTHER: 'Khác',
+}
+export const EXPERIENCE_LEVEL_LABELS = {
+  NONE: 'Không yêu cầu',
+  UNDER_ONE_YEAR: 'Dưới 1 năm',
+  ONE_TO_TWO: '1–2 năm',
+  TWO_TO_THREE: '2–3 năm',
+  THREE_TO_FIVE: '3–5 năm',
+  FIVE_PLUS: 'Trên 5 năm',
+}
+export const EDUCATION_LEVEL_LABELS = {
+  NONE: 'Không yêu cầu',
+  HIGH_SCHOOL: 'THPT',
+  INTERMEDIATE: 'Trung cấp',
+  COLLEGE: 'Cao đẳng',
+  UNIVERSITY: 'Đại học',
+  POSTGRAD: 'Sau đại học',
+}
+export const COMPANY_SIZE_LABELS = {
+  SIZE_1_10: '1–10 nhân sự',
+  SIZE_11_50: '11–50 nhân sự',
+  SIZE_51_200: '51–200 nhân sự',
+  SIZE_201_500: '201–500 nhân sự',
+  SIZE_500_PLUS: '500+ nhân sự',
+  UNKNOWN: 'Chưa xác định',
+}
 // Khớp backend LocationType enum
 export const LOCATION_LABELS = {
   HA_NOI: 'Hà Nội',

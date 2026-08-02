@@ -1,8 +1,8 @@
 package com.opportunityboard.application.dto.opportunity;
 
-import com.opportunityboard.domain.enums.ApplyMode;
-import com.opportunityboard.domain.enums.LocationType;
-import com.opportunityboard.domain.enums.WorkType;
+import com.opportunityboard.application.dto.document.OppDocumentInput;
+import com.opportunityboard.domain.enums.*;
+import jakarta.validation.Valid;
 
 import java.time.Instant;
 import java.util.List;
@@ -15,7 +15,19 @@ public record OpportunityRequest(
         String requirements,
         String benefits,
         String salaryOrReward,
+        Long salaryMin,
+        Long salaryMax,
+        String salaryCurrency,
+        Boolean salaryNegotiable,
         String selectionProcess,
+        JobLevel jobLevel,
+        ExperienceLevel experienceLevel,
+        EducationLevel educationLevel,
+        Integer headcount,
+        EmploymentType employmentType,
+        String addressDetail,
+        String workingSchedule,
+        String skills,
         LocationType location,
         WorkType workType,
         ApplyMode applyMode,
@@ -25,5 +37,6 @@ public record OpportunityRequest(
         String logoUrl,
         String bannerUrl,
         Instant deadline,
-        List<UUID> domainIds
+        List<UUID> domainIds,
+        @Valid List<OppDocumentInput> documents
 ) {}

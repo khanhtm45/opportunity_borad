@@ -51,13 +51,21 @@
 | POST | `/auth/forgot-password` | Gửi token hết hạn 15p | Public |
 | POST | `/auth/reset-password` | Đặt lại mk | Public |
 | POST | `/auth/verify-email` | Xác thực email | User |
-| POST | `/providers/register` | Đăng ký org + KÍCH HOẠT verify (không tự thành Provider) | Public |
+| POST | `/auth/providers/register` | Đăng ký org + hồ sơ tổ chức (≥1 URL) → `verified_status=PENDING` | Public |
 | GET  | `/auth/me` | Thông tin tôi + role | User |
 
 **Quy tắc role (A1.2):**
 - `role=STUDENT` → tạo luôn, cần verify email.
-- `role=PROVIDER` → tạo user + org ở `verified_status=PENDING`; CHỈ được đăng tin sau khi ADMIN duyệt verify.
+- `role=PROVIDER` → tạo user + org ở `verified_status=PENDING`; **bắt buộc ≥1 `org_documents`** (BUSINESS_LICENSE/TAX_CODE/IDENTITY/OTHER + `file_url`); CHỈ được đăng tin sau khi ADMIN duyệt verify.
 - `role=ADMIN` → KHÔNG cho đăng ký tự do; chỉ Admin tạo + bắt buộc MFA.
+
+**Body `/auth/providers/register` (bổ sung):**
+```json
+{
+  "orgName": "...", "contactEmail": "...", "contactFullName": "...", "password": "...",
+  "documents": [{ "docType": "BUSINESS_LICENSE", "title": "GPKD", "fileUrl": "https://..." }]
+}
+```
 
 ---
 
@@ -109,6 +117,12 @@
 | POST | `/opportunities/:id/save` | Bookmark (F04.2), body `{notify_before_hours:24|48}` | Student |
 | DELETE | `/opportunities/:id/save` | Bỏ bookmark | Student |
 | GET  | `/me/bookmarks` | Cơ hội đã lưu | Student |
+| GET  | `/me/profile` | Hồ sơ SV + `cvUrl` / `hasCv` | Student |
+| PUT  | `/me/profile` | Cập nhật hồ sơ / CV URL (body: `cvUrl`, major, university, universityYear, skills[], bio) | Student |
+| POST | `/me/uploads` | Upload S3 **private + AES256** (`purpose=cv\|image\|avatar\|logo\|banner\|org-doc\|opp-doc`) → `{url:ob-s3://…, viewUrl, encryptedAtRest}` | Authenticated |
+| POST | `/uploads/guest` | Upload hồ sơ org khi đăng ký NTD (chỉ `org-doc`) | Public |
+| GET  | `/media/view?ref&exp&sig` | Redirect presign S3 (HMAC) — xem ảnh/hồ sơ không public bucket | Public (có chữ ký) |
+| GET  | `/media/access?ref` | Cấp `viewUrl` / `fetchUrl` mới | Authenticated |
 | GET  | `/me/applications` | Hồ sơ mình đã nộp + status | Student |
 | GET  | `/me/applications/:app_id` | Chi tiết 1 app + history | Student |
 | POST | `/me/applications/:app_id/withdraw` | Rút (chỉ SUBMITTED/REVIEWING) | Student |
@@ -118,6 +132,7 @@
 - Nếu `apply_mode=EXTERNAL` → `POST /apply` trả `409 CONFLICT` (dùng external-click).
 - Chặn nộp sau `deadline` hoặc opp không `OPEN`.
 - UNIQUE(opp_id, student_id) → trùng trả `409 ALREADY_APPLIED`.
+- `cvFile` optional trên apply; nếu thiếu → lấy `student_profiles.cv_url`. Không có CV → `400` (vào `/me/profile` tải CV — URL https công khai).
 
 ---
 
@@ -125,20 +140,38 @@
 
 | Method | Path | Mô tả | Role |
 |--------|------|-------|------|
-| POST | `/provider/opportunities` | Tạo bài đăng (status=DRAFT) | Provider |
-| POST | `/provider/opportunities/:id/submit` | Gửi kiểm duyệt (DRAFT→PENDING) | Provider |
-| PUT  | `/provider/opportunities/:id` | Sửa (nếu DRAFT hoặc HIDDEN) | Provider(owner) |
-| POST | `/provider/opportunities/:id/preview` | Xem trước (không lưu) | Provider |
-| POST | `/provider/opportunities/:id/hide` | Ẩn/Hiện (APPROVED↔HIDDEN) | Provider(owner) |
-| POST | `/provider/opportunities/:id/close` | Đóng sớm (APPROVED→CLOSED) | Provider(owner) |
-| POST | `/provider/opportunities/:id/extend` | Gia hạn deadline | Provider(owner) |
-| POST | `/provider/opportunities/:id/feature-request` | Đề xuất boost (ADMIN duyệt) | Provider |
+| POST | `/opportunities` | Tạo bài đăng DRAFT; body có thể kèm `documents[]` | Provider |
+| POST | `/opportunities/:id/submit` | Gửi duyệt — **bắt buộc ≥1 opportunity document** | Provider |
+| PUT  | `/opportunities/:id` | Sửa DRAFT/HIDDEN; `documents` (nếu gửi) thay thế toàn bộ | Provider(owner) |
+| POST | `/opportunities/:id/hide` | Ẩn/Hiện (APPROVED↔HIDDEN) | Provider(owner) |
+| POST | `/opportunities/:id/close` | Đóng sớm (APPROVED→CLOSED) | Provider(owner) |
+| POST | `/opportunities/:id/extend` | Gia hạn deadline | Provider(owner) |
+| POST | `/opportunities/:id/feature-request` | Đề xuất boost (ADMIN duyệt) | Provider |
 | GET  | `/provider/opportunities` | Danh sách opp của org mình | Provider |
 | GET  | `/provider/opportunities/:id/applications` | DS ứng tuyển (opp mình) | Provider(owner) |
+| GET  | `/provider/opportunities/:id/documents` | Hồ sơ liên quan tin đăng | Provider(owner) |
+| GET  | `/provider/org` | Hồ sơ tổ chức + `verifiedStatus` / `verificationNote` / `needsUpdate` | Provider |
+| PUT  | `/provider/org` | Cập nhật thông tin org (sai/thiếu → về `PENDING` chờ quét lại) | Provider |
+| GET  | `/provider/org/documents` | DS hồ sơ tổ chức | Provider |
+| POST | `/provider/org/documents` | Thêm hồ sơ org `{docType,title,fileUrl}` (reset `PENDING` nếu chưa VERIFIED) | Provider |
+| DELETE | `/provider/org/documents/:docId` | Xoá hồ sơ org (chỉ khi chưa VERIFIED) | Provider |
 | GET  | `/provider/applications/:app_id` | Xem 1 app + CV | Provider(owner) |
 | PUT  | `/provider/applications/:app_id/status` | Đổi status (state machine) | Provider(owner) |
 | GET  | `/provider/applications/export?fmt=csv` | Xuất Excel/CSV | Provider(owner) |
 | GET  | `/provider/stats` | Thống kê org mình | Provider |
+
+**Hồ sơ tin đăng (`documents` trên create/update):** `{docType, title, fileUrl}` với `docType` = `PROGRAM_PROOF` \| `PARTNERSHIP_LETTER` \| `OTHER`.  
+`submit` trả `400` nếu tin chưa có ≥1 document.
+
+**Thuộc tính tin đăng (kiểu TopCV, optional trên create/update):**
+`jobLevel` (`INTERN|STAFF|TEAM_LEAD|MANAGER|DIRECTOR|OTHER`),
+`experienceLevel` (`NONE|UNDER_ONE_YEAR|ONE_TO_TWO|TWO_TO_THREE|THREE_TO_FIVE|FIVE_PLUS`),
+`educationLevel` (`NONE|HIGH_SCHOOL|INTERMEDIATE|COLLEGE|UNIVERSITY|POSTGRAD`),
+`employmentType` (`FULL_TIME|PART_TIME|CONTRACT|FREELANCE|OTHER`),
+`headcount`, `salaryMin`, `salaryMax`, `salaryCurrency`, `salaryNegotiable`,
+`addressDetail`, `workingSchedule`, `skills` (text).
+
+**Đăng ký org bổ sung:** `contactPhone`, `taxCode`, `address`, `industry`, `companySize` (`SIZE_1_10`…`SIZE_500_PLUS`|`UNKNOWN`).
 
 ---
 
@@ -149,12 +182,29 @@
 | GET  | `/admin/moderation-queue` | DS opp PENDING | Admin |
 | POST | `/admin/opportunities/:id/approve` | Duyệt (PENDING→APPROVED, set published_at) | Admin |
 | POST | `/admin/opportunities/:id/reject` | Từ chối (PENDING→REJECTED, body reason) | Admin |
+| POST | `/admin/opportunities/:id/request-update` | Yêu cầu NTD cập nhật tin (→DRAFT + `ai_moderation_note` + thông báo) | Admin |
 | POST | `/admin/opportunities/:id/feature` | Set `is_featured` + `featured_until` | Admin |
 | POST | `/admin/categories` | Thêm (is_system=false) / sửa / xóa (chỉ is_system=false) | Admin |
 | POST | `/admin/domains` | CRUD lĩnh vực | Admin |
 | GET  | `/admin/analytics` | Tổng quan hệ thống | Admin |
 | GET  | `/admin/users` | Quản lý user / verify provider | Admin |
-| POST | `/admin/users/:id/verify-org` | Duyệt org thành VERIFIED | Admin |
+| POST | `/admin/users/:id/verify-org` | Duyệt org thành VERIFIED (**400 nếu thiếu hồ sơ org**) | Admin |
+| GET  | `/admin/orgs/:orgId/documents` | Xem hồ sơ xác minh tổ chức | Admin |
+| GET  | `/admin/orgs/:orgId/tax-check` | **Lớp 1** — check MST (format+checksum), không AI | Admin |
+| GET  | `/admin/users/:id/tax-check-org` | **Lớp 1** — check MST theo owner | Admin |
+| POST | `/admin/orgs/:orgId/ai-scan` | **Lớp 1** — AI quét hồ sơ tổ chức (thuế/pháp nhân) | Admin |
+| POST | `/admin/users/:id/ai-scan-org` | **Lớp 1** — AI quét org theo owner userId | Admin |
+| POST | `/admin/opportunities/:id/ai-scan` | **Lớp 2** — AI quét hồ sơ tin đăng (chương trình/ủy quyền) | Admin |
+| GET  | `/admin/opportunities/:id/documents` | Xem hồ sơ liên quan tin chờ duyệt | Admin |
+
+> Cần `OPENROUTER_API_KEY` / model `google/gemini-3-flash-preview`. **Hai lớp tách biệt:**
+>
+> **Lớp 1 — Tổ chức / thuế** (`…/ai-scan-org`, `…/tax-check`): GPKD·MST·định danh.  
+> `taxCheck` deterministic (10/13 số + checksum). `apply=true`: APPROVE + tax PASS + confidence≥0.75 → `VERIFIED`; còn lại → `NEEDS_UPDATE` + `ORG_UPDATE_REQUIRED`.  
+> Response thêm: `taxCheck`, `forgeryRisk`, `aiGeneratedSuspected`, `authenticitySignals`, `consistencyIssues`.
+>
+> **Lớp 2 — Tin đăng** (`POST /admin/opportunities/:id/ai-scan`): `PROGRAM_PROOF` / `PARTNERSHIP_LETTER` — khớp nội dung tin, spam/lừa đảo. **Không check MST.**  
+> `apply=true`: chỉ tự `REJECT` tin khi verdict=REJECT ≥0.75; **không tự APPROVE** (Admin bấm Duyệt). Org chưa `VERIFIED` → không gợi ý APPROVE tin.
 | GET  | `/admin/audit-logs` | Đọc audit | Admin |
 
 ---
@@ -168,6 +218,8 @@
 | GET  | `/me/notification-preferences` | Xem preference | User |
 | PUT  | `/me/notification-preferences` | Sửa (loại/kênh/tần suất/lĩnh vực) | User |
 | POST | `/me/device-tokens` | Đăng ký push token | User |
+
+Loại thêm: `ORG_UPDATE_REQUIRED` — khi AI/Admin yêu cầu provider cập nhật hồ sơ tổ chức.
 
 ---
 

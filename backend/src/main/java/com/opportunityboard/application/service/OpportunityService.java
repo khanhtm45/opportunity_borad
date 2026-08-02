@@ -1,5 +1,7 @@
 package com.opportunityboard.application.service;
 
+import com.opportunityboard.application.dto.document.DocumentResponse;
+import com.opportunityboard.application.dto.document.OppDocumentInput;
 import com.opportunityboard.application.dto.opportunity.*;
 import com.opportunityboard.common.exception.*;
 import com.opportunityboard.domain.entity.*;
@@ -16,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -30,7 +33,9 @@ public class OpportunityService {
     private final OrgMemberRepository orgMemberRepository;
     private final ModerationLogRepository moderationLogRepository;
     private final OpportunityDomainRepository opportunityDomainRepository;
+    private final OpportunityDocumentRepository opportunityDocumentRepository;
     private final NotificationService notificationService;
+    private final MediaLinkService mediaLinkService;
     private final CurrentUser currentUser;
 
     /** Tính display_status dẫn xuất (Mục 3.1). */
@@ -44,15 +49,25 @@ public class OpportunityService {
     }
 
     private OpportunityResponse toResponse(Opportunity o) {
-        String logo = o.getLogoUrl() != null && !o.getLogoUrl().isBlank()
+        return toResponse(o, true);
+    }
+
+    /** signMedia=false khi provider sửa tin — giữ ref ob-s3:// trong form. */
+    private OpportunityResponse toResponse(Opportunity o, boolean signMedia) {
+        String logoRaw = o.getLogoUrl() != null && !o.getLogoUrl().isBlank()
                 ? o.getLogoUrl() : o.getOrg().getLogoUrl();
+        String logo = mediaLinkService.resolveForDisplay(logoRaw, signMedia);
+        String banner = mediaLinkService.resolveForDisplay(o.getBannerUrl(), signMedia);
         return new OpportunityResponse(
                 o.getOppId(), o.getTitle(), o.getSlug(),
-                o.getOrg().getOrgName(), logo, o.getBannerUrl(),
+                o.getOrg().getOrgName(), logo, banner,
                 o.getCategory().getCode(), displayStatusOf(o),
                 o.getDeadline(), o.getWorkType(), o.getLocation(),
+                o.getEmploymentType(), o.getJobLevel(), o.getExperienceLevel(),
+                o.getSalaryMin(), o.getSalaryMax(), o.getSalaryCurrency(), o.isSalaryNegotiable(),
                 o.isFeatured(), o.getViewCount(), o.getBookmarkCount(),
-                o.getApplicationCount(), o.getShareCount());
+                o.getApplicationCount(), o.getShareCount(),
+                o.getStatus(), o.getRejectionReason(), o.getAiModerationNote());
     }
 
     // -------- F05: PROVIDER LIST OWN --------
@@ -60,7 +75,9 @@ public class OpportunityService {
         User user = currentUser.get();
         Pageable pg = PageRequest.of(page, size);
         Page<Opportunity> p = opportunityRepository.findByCreatedByUserId(user.getUserId(), pg);
-        return new PagedResponseHolder(p.getContent().stream().map(this::toResponse).collect(Collectors.toList()),
+        return new PagedResponseHolder(p.getContent().stream()
+                .map(o -> toResponse(o, false))
+                .collect(Collectors.toList()),
                 (long) p.getTotalElements());
     }
 
@@ -125,18 +142,26 @@ public class OpportunityService {
 
         String detailLogo = o.getLogoUrl() != null && !o.getLogoUrl().isBlank()
                 ? o.getLogoUrl() : o.getOrg().getLogoUrl();
+        List<DocumentResponse> docs = listDocuments(o.getOppId());
+        Organization org = o.getOrg();
         return new OpportunityDetailResponse(
-                o.getOppId(), o.getOrg().getOrgId(), o.getTitle(), o.getSlug(),
-                o.getOrg().getOrgName(), detailLogo, o.getBannerUrl(),
-                o.getOrg().getDescription(), o.getOrg().getWebsite(),
-                o.getOrg().getContactEmail(), o.getOrg().getContactPhone(),
+                o.getOppId(), org.getOrgId(), o.getTitle(), o.getSlug(),
+                org.getOrgName(), detailLogo, o.getBannerUrl(),
+                org.getDescription(), org.getWebsite(),
+                org.getContactEmail(), org.getContactPhone(),
+                org.getTaxCode(), org.getAddress(), org.getIndustry(), org.getCompanySize(),
                 o.getCategory().getCode(), o.getCategory().getCategoryName(),
                 o.getDescription(), o.getRequirements(), o.getBenefits(),
-                o.getSalaryOrReward(), o.getSelectionProcess(),
+                o.getSalaryOrReward(), o.getSalaryMin(), o.getSalaryMax(),
+                o.getSalaryCurrency(), o.isSalaryNegotiable(),
+                o.getSelectionProcess(),
+                o.getJobLevel(), o.getExperienceLevel(), o.getEducationLevel(),
+                o.getHeadcount(), o.getEmploymentType(),
+                o.getAddressDetail(), o.getWorkingSchedule(), o.getSkills(),
                 o.getLocation(), o.getWorkType(), o.getApplyMode(), o.getExternalLink(),
                 o.getDeadline(), o.getStatus(), o.getPublishedAt(), o.isFeatured(),
                 o.getViewCount(), o.getBookmarkCount(), o.getApplicationCount(),
-                o.getShareCount(), domainIds, related);
+                o.getShareCount(), domainIds, related, docs);
     }
 
     /** F04.3: tăng share_count, trả URL công khai để FE copy/share. */
@@ -175,7 +200,7 @@ public class OpportunityService {
 
     // -------- F05.1: PROVIDER CREATE (DRAFT) --------
     @Transactional
-    public UUID create(OpportunityRequest req) {
+    public Map<String, Object> create(OpportunityRequest req) {
         User user = currentUser.get();
         if (user.getRole() != UserRole.PROVIDER) throw new ForbiddenException("Chỉ Provider được đăng tin");
         Organization org = organizationRepository.findByOwnerUserUserId(user.getUserId()).stream()
@@ -187,11 +212,21 @@ public class OpportunityService {
             throw new BadRequestException("categoryId bắt buộc");
         Category cat = categoryRepository.findById(req.categoryId())
                 .orElseThrow(() -> new NotFoundException("Category không tồn tại"));
+        validateSalary(req);
         Opportunity o = Opportunity.builder()
                 .org(org).createdBy(user).category(cat)
                 .title(req.title()).description(req.description()).requirements(req.requirements())
                 .benefits(req.benefits())
-                .salaryOrReward(req.salaryOrReward()).selectionProcess(req.selectionProcess())
+                .salaryOrReward(req.salaryOrReward())
+                .salaryMin(req.salaryMin()).salaryMax(req.salaryMax())
+                .salaryCurrency(req.salaryCurrency() != null && !req.salaryCurrency().isBlank() ? req.salaryCurrency() : "VND")
+                .salaryNegotiable(Boolean.TRUE.equals(req.salaryNegotiable()))
+                .selectionProcess(req.selectionProcess())
+                .jobLevel(req.jobLevel()).experienceLevel(req.experienceLevel())
+                .educationLevel(req.educationLevel()).headcount(req.headcount())
+                .employmentType(req.employmentType())
+                .addressDetail(req.addressDetail()).workingSchedule(req.workingSchedule())
+                .skills(req.skills())
                 .location(req.location()).workType(req.workType())
                 .applyMode(req.applyMode()).externalLink(req.externalLink()).externalRef(req.externalRef()).internalForm(req.internalForm())
                 .logoUrl(req.logoUrl()).bannerUrl(req.bannerUrl())
@@ -205,7 +240,8 @@ public class OpportunityService {
                         OpportunityDomain.builder().oppId(o.getOppId()).domainId(d).build());
             }
         }
-        return o.getOppId();
+        replaceDocuments(o, req.documents());
+        return Map.of("oppId", o.getOppId());
     }
 
     // -------- F05.1: SUBMIT -> PENDING --------
@@ -214,6 +250,9 @@ public class OpportunityService {
         Opportunity o = requireOwner(oppId);
         if (o.getStatus() != OppStatus.DRAFT && o.getStatus() != OppStatus.HIDDEN)
             throw new ConflictException("Chỉ DRAFT/HIDDEN mới gửi duyệt");
+        if (opportunityDocumentRepository.countByOpportunityOppId(oppId) < 1) {
+            throw new BadRequestException("Cần cung cấp ít nhất 1 hồ sơ liên quan trước khi gửi duyệt");
+        }
         o.setStatus(OppStatus.PENDING);
         opportunityRepository.save(o);
         // thông báo Admin có tin chờ duyệt (PENDING_REVIEW)
@@ -226,9 +265,19 @@ public class OpportunityService {
         Opportunity o = requireOwner(oppId);
         if (o.getStatus() != OppStatus.DRAFT && o.getStatus() != OppStatus.HIDDEN)
             throw new ConflictException("Chỉ sửa được khi DRAFT hoặc HIDDEN");
+        validateSalary(req);
         o.setTitle(req.title()); o.setDescription(req.description());
         o.setRequirements(req.requirements()); o.setBenefits(req.benefits());
-        o.setSalaryOrReward(req.salaryOrReward()); o.setSelectionProcess(req.selectionProcess());
+        o.setSalaryOrReward(req.salaryOrReward());
+        o.setSalaryMin(req.salaryMin()); o.setSalaryMax(req.salaryMax());
+        o.setSalaryCurrency(req.salaryCurrency() != null && !req.salaryCurrency().isBlank() ? req.salaryCurrency() : "VND");
+        o.setSalaryNegotiable(Boolean.TRUE.equals(req.salaryNegotiable()));
+        o.setSelectionProcess(req.selectionProcess());
+        o.setJobLevel(req.jobLevel()); o.setExperienceLevel(req.experienceLevel());
+        o.setEducationLevel(req.educationLevel()); o.setHeadcount(req.headcount());
+        o.setEmploymentType(req.employmentType());
+        o.setAddressDetail(req.addressDetail()); o.setWorkingSchedule(req.workingSchedule());
+        o.setSkills(req.skills());
         o.setLocation(req.location()); o.setWorkType(req.workType());
         o.setApplyMode(req.applyMode()); o.setExternalLink(req.externalLink());
         o.setExternalRef(req.externalRef());
@@ -236,6 +285,57 @@ public class OpportunityService {
         o.setLogoUrl(req.logoUrl()); o.setBannerUrl(req.bannerUrl());
         o.setDeadline(req.deadline());
         opportunityRepository.save(o);
+        if (req.documents() != null) {
+            replaceDocuments(o, req.documents());
+        }
+    }
+
+    public List<DocumentResponse> listDocumentsForOwnerOrAdmin(UUID oppId) {
+        requireOwner(oppId);
+        return listDocuments(oppId);
+    }
+
+    private List<DocumentResponse> listDocuments(UUID oppId) {
+        return opportunityDocumentRepository.findByOpportunityOppId(oppId).stream()
+                .map(d -> new DocumentResponse(
+                        d.getDocId(), d.getDocType().name(), d.getTitle(), d.getFileUrl(),
+                        mediaLinkService.resolveForDisplay(d.getFileUrl(), true),
+                        d.getCreatedAt()))
+                .collect(Collectors.toList());
+    }
+
+    private void validateSalary(OpportunityRequest req) {
+        if (req.salaryMin() != null && req.salaryMin() < 0)
+            throw new BadRequestException("salaryMin không hợp lệ");
+        if (req.salaryMax() != null && req.salaryMax() < 0)
+            throw new BadRequestException("salaryMax không hợp lệ");
+        if (req.salaryMin() != null && req.salaryMax() != null && req.salaryMin() > req.salaryMax())
+            throw new BadRequestException("salaryMin không được lớn hơn salaryMax");
+        if (req.headcount() != null && req.headcount() < 1)
+            throw new BadRequestException("headcount phải ≥ 1");
+    }
+
+    private void replaceDocuments(Opportunity o, List<OppDocumentInput> inputs) {
+        opportunityDocumentRepository.deleteByOpportunityOppId(o.getOppId());
+        opportunityDocumentRepository.flush();
+        if (inputs == null || inputs.isEmpty()) return;
+        for (OppDocumentInput input : inputs) {
+            if (input == null || input.docType() == null
+                    || input.title() == null || input.title().isBlank()
+                    || input.fileUrl() == null || input.fileUrl().isBlank()) {
+                throw new BadRequestException("Hồ sơ tin đăng thiếu docType/title/fileUrl");
+            }
+            String fu = input.fileUrl().trim();
+            if (!(fu.startsWith("http://") || fu.startsWith("https://") || fu.startsWith("ob-s3://"))) {
+                throw new BadRequestException("fileUrl hồ sơ tin phải là https:// hoặc ob-s3://");
+            }
+            opportunityDocumentRepository.save(OpportunityDocument.builder()
+                    .opportunity(o)
+                    .docType(input.docType())
+                    .title(input.title().trim())
+                    .fileUrl(input.fileUrl().trim())
+                    .build());
+        }
     }
 
     // -------- F05: HIDE/SHOW --------
@@ -276,6 +376,8 @@ public class OpportunityService {
         o.setStatus(OppStatus.APPROVED);
         o.setModeratedBy(admin); o.setModeratedAt(Instant.now());
         o.setPublishedAt(Instant.now());
+        o.setAiModerationNote(null);
+        o.setRejectionReason(null);
         opportunityRepository.save(o);
         moderationLogRepository.save(ModerationLog.builder().opportunity(o).admin(admin)
                 .action(ModerationAction.APPROVED).build());
@@ -297,6 +399,42 @@ public class OpportunityService {
         moderationLogRepository.save(ModerationLog.builder().opportunity(o).admin(admin)
                 .action(ModerationAction.REJECTED).reason(req.reason()).build());
         notificationService.notifyOppRejected(o);
+    }
+
+    /**
+     * Yêu cầu provider bổ sung hồ sơ / sửa tin — trả về DRAFT kèm lý do, gửi thông báo.
+     * Admin có thể quét AI lại sau khi provider gửi duyệt.
+     */
+    @Transactional
+    public void requestUpdate(UUID oppId, ModerateRequest req) {
+        Opportunity o = opportunityRepository.findById(oppId)
+                .orElseThrow(() -> new NotFoundException("Không tồn tại"));
+        if (o.getStatus() != OppStatus.PENDING && o.getStatus() != OppStatus.REJECTED) {
+            throw new ConflictException("Chỉ tin PENDING/REJECTED mới yêu cầu cập nhật");
+        }
+        String reason = req != null && req.reason() != null && !req.reason().isBlank()
+                ? req.reason().trim()
+                : "Vui lòng bổ sung hồ sơ chương trình / sửa nội dung tin rồi gửi duyệt lại.";
+        User admin = currentUser.get();
+        o.setStatus(OppStatus.DRAFT);
+        o.setAiModerationNote(reason);
+        o.setRejectionReason(reason);
+        o.setModeratedBy(admin);
+        o.setModeratedAt(Instant.now());
+        opportunityRepository.save(o);
+        moderationLogRepository.save(ModerationLog.builder().opportunity(o).admin(admin)
+                .action(ModerationAction.REJECTED).reason("REQUEST_UPDATE: " + reason).build());
+        notificationService.notifyOppUpdateRequired(o, reason);
+    }
+
+    /** Lưu ghi chú AI scan (không đổi status) — Admin xem lại trước khi quyết định. */
+    @Transactional
+    public void saveAiScanNote(UUID oppId, String note) {
+        Opportunity o = opportunityRepository.findById(oppId)
+                .orElseThrow(() -> new NotFoundException("Không tồn tại"));
+        o.setAiModerationNote(note);
+        o.setAiScannedAt(Instant.now());
+        opportunityRepository.save(o);
     }
 
     // -------- FEATURED (Mục 3) --------

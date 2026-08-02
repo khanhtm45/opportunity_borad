@@ -1,9 +1,7 @@
 package com.opportunityboard.application.dto.opportunity;
 
-import com.opportunityboard.domain.enums.ApplyMode;
-import com.opportunityboard.domain.enums.LocationType;
-import com.opportunityboard.domain.enums.OppStatus;
-import com.opportunityboard.domain.enums.WorkType;
+import com.opportunityboard.application.dto.document.DocumentResponse;
+import com.opportunityboard.domain.enums.*;
 
 import java.time.Instant;
 import java.util.List;
@@ -21,13 +19,29 @@ public record OpportunityDetailResponse(
         String orgWebsite,
         String orgContactEmail,
         String orgContactPhone,
+        String orgTaxCode,
+        String orgAddress,
+        String orgIndustry,
+        CompanySize orgCompanySize,
         String categoryCode,
         String categoryName,
         String description,
         String requirements,
         String benefits,
         String salaryOrReward,
+        Long salaryMin,
+        Long salaryMax,
+        String salaryCurrency,
+        boolean salaryNegotiable,
         String selectionProcess,
+        JobLevel jobLevel,
+        ExperienceLevel experienceLevel,
+        EducationLevel educationLevel,
+        Integer headcount,
+        EmploymentType employmentType,
+        String addressDetail,
+        String workingSchedule,
+        String skills,
         LocationType location,
         WorkType workType,
         ApplyMode applyMode,
@@ -41,5 +55,6 @@ public record OpportunityDetailResponse(
         int applicationCount,
         int shareCount,
         List<UUID> domainIds,
-        List<OpportunityResponse> related
+        List<OpportunityResponse> related,
+        List<DocumentResponse> documents
 ) {}

@@ -84,4 +84,30 @@ public class NotificationServiceImpl implements NotificationService {
         save(app.getStudent(), NotifType.APP_STATUS, NotifChannel.EMAIL, title,
                 "Opportunity '" + app.getOpportunity().getTitle() + "'", app.getAppId());
     }
+
+    @Override
+    public void notifyOrgUpdateRequired(Organization org, String reason) {
+        User owner = org.getOwnerUser();
+        if (owner == null) return;
+        String body = "Hồ sơ tổ chức \"" + org.getOrgName() + "\" cần cập nhật lại. "
+                + "Vui lòng bổ sung giấy tờ / sửa thông tin liên hệ rồi gửi lại để kiểm duyệt. "
+                + (reason != null && !reason.isBlank() ? "Chi tiết: " + reason : "");
+        save(owner, NotifType.ORG_UPDATE_REQUIRED, NotifChannel.IN_APP,
+                "Yêu cầu cập nhật hồ sơ tổ chức", body, org.getOrgId());
+        save(owner, NotifType.ORG_UPDATE_REQUIRED, NotifChannel.EMAIL,
+                "Yêu cầu cập nhật hồ sơ tổ chức", body, org.getOrgId());
+    }
+
+    @Override
+    public void notifyOppUpdateRequired(Opportunity o, String reason) {
+        User owner = o.getCreatedBy();
+        if (owner == null && o.getOrg() != null) owner = o.getOrg().getOwnerUser();
+        if (owner == null) return;
+        String body = "Tin \"" + o.getTitle() + "\" cần bổ sung hồ sơ / cập nhật lại trước khi duyệt. "
+                + (reason != null && !reason.isBlank() ? "Lý do: " + reason : "");
+        save(owner, NotifType.OPP_UPDATE_REQUIRED, NotifChannel.IN_APP,
+                "Yêu cầu cập nhật tin đăng", body, o.getOppId());
+        save(owner, NotifType.OPP_UPDATE_REQUIRED, NotifChannel.EMAIL,
+                "Yêu cầu cập nhật tin đăng", body, o.getOppId());
+    }
 }

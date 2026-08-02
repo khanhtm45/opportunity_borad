@@ -5,6 +5,10 @@ server:
 spring:
   application:
     name: opportunity-board-backend
+  servlet:
+    multipart:
+      max-file-size: ${UPLOAD_MAX_FILE_SIZE:10MB}
+      max-request-size: ${UPLOAD_MAX_REQUEST_SIZE:12MB}
   datasource:
     url: ${DB_URL:jdbc:postgresql://aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres?sslmode=require&prepareThreshold=0&preparedStatementCacheSize=0&defaultRowFetchSize=50&stringtype=unspecified}
     username: ${DB_USERNAME:postgres.cmmypmpxisysrnqoqfdv}
@@ -41,6 +45,25 @@ app:
     secret: ${JWT_SECRET:change-me-in-production-32bytes-min!!}
     expiration-ms: 900000        # 15 phút
     refresh-ms: 1209600000        # 14 ngày
+  openrouter:
+    api-key: ${OPENROUTER_API_KEY:}
+    base-url: ${OPENROUTER_BASE_URL:https://openrouter.ai/api/v1}
+    model: ${OPENROUTER_MODEL:google/gemini-3-flash-preview}
+    site-url: ${OPENROUTER_SITE_URL:https://github.com/khanhtm45/opportunity_borad}
+    site-name: ${OPENROUTER_SITE_NAME:Opportunity Board}
+    timeout-seconds: ${OPENROUTER_TIMEOUT_SECONDS:90}
+  s3:
+    # Bật khi UPLOAD_STORAGE=s3 và đủ AWS keys (xem backend/.env)
+    enabled: ${UPLOAD_STORAGE:}
+    bucket: ${S3_BUCKET:}
+    region: ${S3_REGION:ap-southeast-2}
+    access-key: ${AWS_ACCESS_KEY_ID:}
+    secret-key: ${AWS_SECRET_ACCESS_KEY:}
+    public-base-url: ${S3_PUBLIC_BASE_URL:}
+  media:
+    # Base tuyệt đối cho /media/view (VD: https://xxx.ondigitalocean.app/api/v1). Local để trống → /api/v1
+    public-base-url: ${MEDIA_PUBLIC_BASE_URL:}
+
 
 logging:
   level:

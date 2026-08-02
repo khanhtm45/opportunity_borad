@@ -7,9 +7,10 @@ import com.opportunityboard.domain.entity.Opportunity;
 import com.opportunityboard.domain.entity.User;
 import com.opportunityboard.domain.enums.OppStatus;
 import com.opportunityboard.domain.enums.UserRole;
+import com.opportunityboard.infrastructure.repository.CategoryRepository;
+import com.opportunityboard.infrastructure.repository.OpportunityDocumentRepository;
 import com.opportunityboard.infrastructure.repository.OpportunityRepository;
 import com.opportunityboard.infrastructure.repository.OrganizationRepository;
-import com.opportunityboard.infrastructure.repository.CategoryRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -25,11 +26,13 @@ class OpportunityStateMachineTest extends AbstractIntegrationTest {
     @Autowired OpportunityRepository opportunityRepository;
     @Autowired OrganizationRepository organizationRepository;
     @Autowired CategoryRepository categoryRepository;
+    @Autowired OpportunityDocumentRepository opportunityDocumentRepository;
 
     @Test
     void draft_to_pending_to_approved_flow() {
         User provider = loginAs(UserRole.PROVIDER, "prov-flow@test.com");
-        Opportunity o = TestFixtures.opp(organizationRepository, opportunityRepository, categoryRepository, provider, OppStatus.DRAFT);
+        Opportunity o = TestFixtures.oppWithDocs(organizationRepository, opportunityRepository,
+                categoryRepository, opportunityDocumentRepository, provider, OppStatus.DRAFT);
 
         // submit -> PENDING
         opportunityService.submit(o.getOppId());
@@ -46,7 +49,8 @@ class OpportunityStateMachineTest extends AbstractIntegrationTest {
     @Test
     void provider_can_submit_own_opp() {
         User provider = loginAs(UserRole.PROVIDER, "prov-submit@test.com");
-        Opportunity o = TestFixtures.opp(organizationRepository, opportunityRepository, categoryRepository, provider, OppStatus.DRAFT);
+        Opportunity o = TestFixtures.oppWithDocs(organizationRepository, opportunityRepository,
+                categoryRepository, opportunityDocumentRepository, provider, OppStatus.DRAFT);
         // provider submit opp của mình -> PENDING (không bị Forbidden)
         opportunityService.submit(o.getOppId());
         assertEquals(OppStatus.PENDING, opportunityRepository.findById(o.getOppId()).get().getStatus());
@@ -55,7 +59,8 @@ class OpportunityStateMachineTest extends AbstractIntegrationTest {
     @Test
     void reject_requires_pending_and_stores_reason() {
         User provider = loginAs(UserRole.PROVIDER, "prov-rej2@test.com");
-        Opportunity o = TestFixtures.opp(organizationRepository, opportunityRepository, categoryRepository, provider, OppStatus.PENDING);
+        Opportunity o = TestFixtures.oppWithDocs(organizationRepository, opportunityRepository,
+                categoryRepository, opportunityDocumentRepository, provider, OppStatus.PENDING);
 
         User admin = loginAs(UserRole.ADMIN, "admin-rej@test.com");
         opportunityService.reject(o.getOppId(),
@@ -68,7 +73,8 @@ class OpportunityStateMachineTest extends AbstractIntegrationTest {
     @Test
     void cannot_approve_non_pending() {
         User provider = loginAs(UserRole.PROVIDER, "prov-np@test.com");
-        Opportunity o = TestFixtures.opp(organizationRepository, opportunityRepository, categoryRepository, provider, OppStatus.DRAFT);
+        Opportunity o = TestFixtures.oppWithDocs(organizationRepository, opportunityRepository,
+                categoryRepository, opportunityDocumentRepository, provider, OppStatus.DRAFT);
 
         User admin = loginAs(UserRole.ADMIN, "admin-np@test.com");
         assertThrows(ConflictException.class, () -> opportunityService.approve(o.getOppId()));
@@ -77,7 +83,8 @@ class OpportunityStateMachineTest extends AbstractIntegrationTest {
     @Test
     void hidden_toggle_only_when_approved() {
         User provider = loginAs(UserRole.PROVIDER, "prov-hide@test.com");
-        Opportunity o = TestFixtures.opp(organizationRepository, opportunityRepository, categoryRepository, provider, OppStatus.APPROVED);
+        Opportunity o = TestFixtures.oppWithDocs(organizationRepository, opportunityRepository,
+                categoryRepository, opportunityDocumentRepository, provider, OppStatus.APPROVED);
 
         opportunityService.setHidden(o.getOppId(), true);
         assertEquals(OppStatus.HIDDEN, opportunityRepository.findById(o.getOppId()).get().getStatus());
@@ -88,7 +95,8 @@ class OpportunityStateMachineTest extends AbstractIntegrationTest {
     @Test
     void idor_other_provider_cannot_modify() {
         User ownerProvider = loginAs(UserRole.PROVIDER, "prov-owner@test.com");
-        Opportunity o = TestFixtures.opp(organizationRepository, opportunityRepository, categoryRepository, ownerProvider, OppStatus.DRAFT);
+        Opportunity o = TestFixtures.oppWithDocs(organizationRepository, opportunityRepository,
+                categoryRepository, opportunityDocumentRepository, ownerProvider, OppStatus.DRAFT);
 
         // Provider khác cố sửa -> Forbidden (chống BOLA)
         User intruder = loginAs(UserRole.PROVIDER, "prov-intruder@test.com");

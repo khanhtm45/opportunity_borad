@@ -36,6 +36,8 @@ public class SecurityConfig {
             "/api/v1/opportunities/*/share",
             "/api/v1/opportunities/*/external-click",
             "/api/v1/opportunities/*/view",
+            "/api/v1/media/view",
+            "/api/v1/uploads/guest",
             "/v3/api-docs/**", "/swagger-ui/**", "/actuator/health"
     };
 

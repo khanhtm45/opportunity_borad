@@ -1,6 +1,9 @@
 package com.opportunityboard.application.service;
 
+import com.opportunityboard.common.exception.NotFoundException;
+import com.opportunityboard.domain.entity.Organization;
 import com.opportunityboard.domain.entity.User;
+import com.opportunityboard.domain.enums.OppStatus;
 import com.opportunityboard.domain.enums.OrgVerified;
 import com.opportunityboard.domain.enums.UserRole;
 import com.opportunityboard.infrastructure.repository.ApplicationRepository;
@@ -14,7 +17,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -26,8 +32,8 @@ public class AdminService {
     private final OpportunityRepository opportunityRepository;
     private final OrganizationRepository organizationRepository;
     private final ApplicationRepository applicationRepository;
+    private final OrgDocumentService orgDocumentService;
 
-    /** Danh sách user (phân trang). */
     public Map<String, Object> listUsers(int page, int size) {
         Page<User> p = userRepository.findAll(PageRequest.of(page, size));
         Map<String, Object> out = new HashMap<>();
@@ -36,25 +42,69 @@ public class AdminService {
         return out;
     }
 
-    /** Thống kê toàn hệ thống. */
     public Map<String, Object> analytics() {
         Map<String, Object> m = new HashMap<>();
-        m.put("users", userRepository.count());
-        m.put("providers", userRepository.countByRole(UserRole.PROVIDER));
-        m.put("students", userRepository.countByRole(UserRole.STUDENT));
-        m.put("opportunities", opportunityRepository.count());
-        m.put("applications", applicationRepository.count());
+        long users = userRepository.count();
+        long providers = userRepository.countByRole(UserRole.PROVIDER);
+        long students = userRepository.countByRole(UserRole.STUDENT);
+        long opportunities = opportunityRepository.count();
+        long applications = applicationRepository.count();
+        long pending = opportunityRepository.countByStatus(OppStatus.PENDING);
+        long approved = opportunityRepository.countByStatus(OppStatus.APPROVED);
+        long rejected = opportunityRepository.countByStatus(OppStatus.REJECTED);
+        long draft = opportunityRepository.countByStatus(OppStatus.DRAFT);
+        long orgs = organizationRepository.count();
+        long orgsVerified = organizationRepository.countByVerifiedStatus(OrgVerified.VERIFIED);
+        long orgsNeeds = organizationRepository.countByVerifiedStatus(OrgVerified.NEEDS_UPDATE);
+
+        m.put("users", users);
+        m.put("providers", providers);
+        m.put("students", students);
+        m.put("admins", Math.max(0, users - providers - students));
+        m.put("opportunities", opportunities);
+        m.put("applications", applications);
+        m.put("pending", pending);
+        m.put("approved", approved);
+        m.put("rejected", rejected);
+        m.put("draft", draft);
+        m.put("orgs", orgs);
+        m.put("orgsVerified", orgsVerified);
+        m.put("orgsNeedsUpdate", orgsNeeds);
+
+        List<Map<String, Object>> oppByStatus = new ArrayList<>();
+        for (OppStatus s : List.of(OppStatus.PENDING, OppStatus.APPROVED, OppStatus.REJECTED,
+                OppStatus.DRAFT, OppStatus.HIDDEN, OppStatus.CLOSED, OppStatus.EXPIRED)) {
+            long c = opportunityRepository.countByStatus(s);
+            if (c > 0) {
+                Map<String, Object> row = new LinkedHashMap<>();
+                row.put("status", s.name());
+                row.put("count", c);
+                oppByStatus.add(row);
+            }
+        }
+        m.put("oppByStatus", oppByStatus);
+
+        List<Map<String, Object>> usersByRole = new ArrayList<>();
+        usersByRole.add(Map.of("role", "STUDENT", "count", students));
+        usersByRole.add(Map.of("role", "PROVIDER", "count", providers));
+        usersByRole.add(Map.of("role", "ADMIN", "count", Math.max(0, users - providers - students)));
+        m.put("usersByRole", usersByRole);
+
         m.put("generated_at", Instant.now().toString());
         return m;
     }
 
-    /** Duyệt org thành VERIFIED (F06: verify provider). */
     @Transactional
     public void verifyOrg(UUID userId) {
-        organizationRepository.findByOwnerUserUserId(userId).forEach(org -> {
-            org.setVerifiedStatus(com.opportunityboard.domain.enums.OrgVerified.VERIFIED);
+        List<Organization> orgs = organizationRepository.findByOwnerUserUserId(userId);
+        if (orgs.isEmpty()) {
+            throw new NotFoundException("Không tìm thấy tổ chức của user");
+        }
+        for (Organization org : orgs) {
+            orgDocumentService.requireHasDocuments(org.getOrgId());
+            org.setVerifiedStatus(OrgVerified.VERIFIED);
             org.setVerifiedAt(Instant.now());
             organizationRepository.save(org);
-        });
+        }
     }
 }

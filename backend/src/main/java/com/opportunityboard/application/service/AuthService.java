@@ -26,6 +26,7 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final OrganizationRepository organizationRepository;
+    private final OrgDocumentService orgDocumentService;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
@@ -88,9 +89,15 @@ public class AuthService {
                 .website(req.website())
                 .description(req.description())
                 .contactEmail(req.contactEmail())
+                .contactPhone(req.contactPhone())
+                .taxCode(req.taxCode())
+                .address(req.address())
+                .industry(req.industry())
+                .companySize(req.companySize())
                 .verifiedStatus(OrgVerified.PENDING)
                 .build();
-        organizationRepository.save(org);
+        org = organizationRepository.save(org);
+        orgDocumentService.saveAllForOrg(org, req.documents());
         return issueTokens(user);
     }
 

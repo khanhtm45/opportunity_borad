@@ -1,5 +1,6 @@
 package com.opportunityboard.domain.entity;
 
+import com.opportunityboard.domain.enums.CompanySize;
 import com.opportunityboard.domain.enums.OrgVerified;
 import jakarta.persistence.*;
 import lombok.*;
@@ -26,6 +27,19 @@ public class Organization {
     private String contactEmail;
     private String contactPhone;
 
+    @Column(name = "tax_code", length = 40)
+    private String taxCode;
+
+    @Column(length = 500)
+    private String address;
+
+    @Column(length = 200)
+    private String industry;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "company_size")
+    private CompanySize companySize;
+
     @Column(columnDefinition = "text")
     private String description;
 
@@ -39,6 +53,13 @@ public class Organization {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "verified_by")
     private User verifiedBy;
+
+    /** Phản hồi AI/Admin khi hồ sơ sai/thiếu — provider cần cập nhật theo ghi chú này. */
+    @Column(name = "verification_note", columnDefinition = "text")
+    private String verificationNote;
+
+    @Column(name = "ai_scanned_at")
+    private Instant aiScannedAt;
 
     @Builder.Default
     private Instant createdAt = Instant.now();

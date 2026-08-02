@@ -12,6 +12,7 @@ import BookmarksPage from './pages/BookmarksPage.jsx'
 import ProviderPage from './pages/ProviderPage.jsx'
 import AdminPage from './pages/AdminPage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
+import StudentProfilePage from './pages/StudentProfilePage.jsx'
 import MyApplicationsPage from './pages/MyApplicationsPage.jsx'
 import NotificationsPage from './pages/NotificationsPage.jsx'
 import { Component } from 'react'
@@ -44,6 +45,7 @@ export default function App() {
         <Route path="/me/bookmarks" element={<BookmarksPage />} />
         <Route path="/me/applications" element={<MyApplicationsPage />} />
         <Route path="/me/notifications" element={<NotificationsPage />} />
+        <Route path="/me/profile" element={<StudentProfilePage />} />
         <Route path="/me" element={<DashboardPage />} />
         <Route path="/provider" element={<ProviderPage />} />
         <Route path="/admin" element={<AdminPage />} />

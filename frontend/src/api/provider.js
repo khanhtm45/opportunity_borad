@@ -20,4 +20,10 @@ export const providerApi = {
     api.get(`/provider/applications/export`, { params: { fmt: 'csv', oppId }, responseType: 'blob' })
       .then((r) => r.data),
   stats: () => api.get('/provider/stats').then((r) => r.data),
+  orgProfile: () => api.get('/provider/org').then((r) => r.data),
+  updateOrgProfile: (body) => api.put('/provider/org', body).then((r) => r.data),
+  orgDocuments: () => api.get('/provider/org/documents').then((r) => r.data || []),
+  addOrgDocument: (body) => api.post('/provider/org/documents', body).then((r) => r.data),
+  deleteOrgDocument: (docId) => api.delete(`/provider/org/documents/${docId}`).then((r) => r.data),
+  oppDocuments: (oppId) => api.get(`/provider/opportunities/${oppId}/documents`).then((r) => r.data || []),
 }

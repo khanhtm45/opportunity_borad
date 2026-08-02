@@ -13,15 +13,25 @@ public record OpportunityResponse(
         String logoUrl,
         String bannerUrl,
         String categoryCode,
-        DisplayStatus displayStatus,     // OPEN / CLOSING_SOON / EXPIRED / HIDDEN
+        DisplayStatus displayStatus,
         Instant deadline,
         WorkType workType,
         LocationType location,
+        EmploymentType employmentType,
+        JobLevel jobLevel,
+        ExperienceLevel experienceLevel,
+        Long salaryMin,
+        Long salaryMax,
+        String salaryCurrency,
+        boolean salaryNegotiable,
         boolean isFeatured,
         int viewCount,
         int bookmarkCount,
         int applicationCount,
-        int shareCount
+        int shareCount,
+        OppStatus status,
+        String rejectionReason,
+        String aiModerationNote
 ) {
     public enum DisplayStatus { OPEN, CLOSING_SOON, EXPIRED, HIDDEN }
 }

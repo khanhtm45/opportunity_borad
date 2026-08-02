@@ -107,6 +107,11 @@ export default function DashboardPage() {
                 <h3 className="font-bold text-slate-800">{user.fullName || '—'}</h3>
                 <p className="text-sm text-slate-500">{user.email}</p>
                 <p className="mt-2 text-xs text-slate-400">Vai trò: {user.role} · Trạng thái: {user.status}</p>
+                {user.role === 'STUDENT' && (
+                  <Link to="/me/profile" className="btn-primary mt-4 inline-flex">
+                    Hồ sơ & tải CV lên →
+                  </Link>
+                )}
               </div>
             )}
           </>

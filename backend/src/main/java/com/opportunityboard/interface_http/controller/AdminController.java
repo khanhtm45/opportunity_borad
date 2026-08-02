@@ -3,7 +3,10 @@ package com.opportunityboard.interface_http.controller;
 import com.opportunityboard.application.dto.opportunity.FeatureRequest;
 import com.opportunityboard.application.dto.opportunity.ModerateRequest;
 import com.opportunityboard.application.service.AdminService;
+import com.opportunityboard.application.service.OpportunityDocumentScanService;
 import com.opportunityboard.application.service.OpportunityService;
+import com.opportunityboard.application.service.OrgDocumentService;
+import com.opportunityboard.application.service.ProviderDocumentScanService;
 import com.opportunityboard.common.response.PagedResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +23,9 @@ public class AdminController {
 
     private final OpportunityService opportunityService;
     private final AdminService adminService;
+    private final OrgDocumentService orgDocumentService;
+    private final ProviderDocumentScanService providerDocumentScanService;
+    private final OpportunityDocumentScanService opportunityDocumentScanService;
 
     // F06: hàng đợi kiểm duyệt
     @GetMapping("/moderation-queue")
@@ -38,6 +44,13 @@ public class AdminController {
     @PostMapping("/opportunities/{id}/reject")
     public ResponseEntity<?> reject(@PathVariable UUID id, @RequestBody ModerateRequest req) {
         opportunityService.reject(id, req);
+        return ResponseEntity.ok().build();
+    }
+
+    /** Gửi yêu cầu provider cập nhật tin (kèm lý do AI/Admin) — tin về DRAFT. */
+    @PostMapping("/opportunities/{id}/request-update")
+    public ResponseEntity<?> requestUpdate(@PathVariable UUID id, @RequestBody ModerateRequest req) {
+        opportunityService.requestUpdate(id, req);
         return ResponseEntity.ok().build();
     }
 
@@ -65,5 +78,53 @@ public class AdminController {
     public ResponseEntity<?> verifyOrg(@PathVariable UUID id) {
         adminService.verifyOrg(id);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/orgs/{orgId}/documents")
+    public ResponseEntity<?> orgDocuments(@PathVariable UUID orgId) {
+        return ResponseEntity.ok(orgDocumentService.listByOrg(orgId));
+    }
+
+    /**
+     * Lớp 1 — AI quét hồ sơ TỔ CHỨC (thuế/pháp nhân). Không quét tin đăng.
+     * apply=true: APPROVE+tax PASS → VERIFIED; còn lại → NEEDS_UPDATE.
+     */
+    @PostMapping("/orgs/{orgId}/ai-scan")
+    public ResponseEntity<?> aiScanOrg(@PathVariable UUID orgId,
+                                       @RequestParam(defaultValue = "true") boolean apply) {
+        return ResponseEntity.ok(providerDocumentScanService.scanOrg(orgId, apply));
+    }
+
+    /** Lớp 1 — AI quét org theo owner userId. */
+    @PostMapping("/users/{id}/ai-scan-org")
+    public ResponseEntity<?> aiScanOrgByUser(@PathVariable UUID id,
+                                             @RequestParam(defaultValue = "true") boolean apply) {
+        return ResponseEntity.ok(providerDocumentScanService.scanByOwnerUserId(id, apply));
+    }
+
+    /** Lớp 1 — chỉ check MST (format + checksum), không gọi AI. */
+    @GetMapping("/orgs/{orgId}/tax-check")
+    public ResponseEntity<?> taxCheckOrg(@PathVariable UUID orgId) {
+        return ResponseEntity.ok(providerDocumentScanService.taxCheckOrg(orgId));
+    }
+
+    @GetMapping("/users/{id}/tax-check-org")
+    public ResponseEntity<?> taxCheckOrgByUser(@PathVariable UUID id) {
+        return ResponseEntity.ok(providerDocumentScanService.taxCheckByOwnerUserId(id));
+    }
+
+    /**
+     * Lớp 2 — AI quét hồ sơ TIN ĐĂNG (PROGRAM_PROOF / PARTNERSHIP_LETTER). Không check thuế.
+     * apply=true: chỉ tự REJECT khi verdict=REJECT ≥0.75; không tự APPROVE tin.
+     */
+    @PostMapping("/opportunities/{id}/ai-scan")
+    public ResponseEntity<?> aiScanOpportunity(@PathVariable UUID id,
+                                               @RequestParam(defaultValue = "true") boolean apply) {
+        return ResponseEntity.ok(opportunityDocumentScanService.scanOpportunity(id, apply));
+    }
+
+    @GetMapping("/opportunities/{id}/documents")
+    public ResponseEntity<?> opportunityDocuments(@PathVariable UUID id) {
+        return ResponseEntity.ok(opportunityService.listDocumentsForOwnerOrAdmin(id));
     }
 }

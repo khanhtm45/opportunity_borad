@@ -19,6 +19,8 @@ public interface OpportunityRepository extends JpaRepository<Opportunity, UUID> 
 
     org.springframework.data.domain.Page<Opportunity> findByStatus(com.opportunityboard.domain.enums.OppStatus status, org.springframework.data.domain.Pageable pg);
 
+    long countByStatus(OppStatus status);
+
     // F01: board công khai = APPROVED & chưa hết hạn (display OPEN/OPEN_SOON)
     @Query("""
            SELECT o FROM Opportunity o

@@ -69,8 +69,8 @@ export default function SearchFilter({ onSearch }) {
             onClick={() => toggleQuick(k)}
             className={`chip border transition ${
               category === k
-                ? 'border-brand-400 bg-brand-500 text-white'
-                : 'border-white/40 bg-white/10 text-white/90 hover:border-white/70'
+                ? 'border-brand-300 bg-brand-500 text-white font-semibold shadow-card'
+                : 'border-white/50 bg-white/15 text-white hover:border-white hover:bg-white/25 font-medium'
             }`}
           >
             {v}

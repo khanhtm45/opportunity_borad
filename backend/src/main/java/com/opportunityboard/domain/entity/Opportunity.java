@@ -1,9 +1,6 @@
 package com.opportunityboard.domain.entity;
 
-import com.opportunityboard.domain.enums.ApplyMode;
-import com.opportunityboard.domain.enums.LocationType;
-import com.opportunityboard.domain.enums.OppStatus;
-import com.opportunityboard.domain.enums.WorkType;
+import com.opportunityboard.domain.enums.*;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.Instant;
@@ -59,8 +56,49 @@ public class Opportunity {
     @Column(name = "salary_or_reward", columnDefinition = "text")
     private String salaryOrReward;
 
+    @Column(name = "salary_min")
+    private Long salaryMin;
+
+    @Column(name = "salary_max")
+    private Long salaryMax;
+
+    @Column(name = "salary_currency", length = 10)
+    @Builder.Default
+    private String salaryCurrency = "VND";
+
+    @Column(name = "salary_negotiable", nullable = false)
+    @Builder.Default
+    private boolean salaryNegotiable = false;
+
     @Column(name = "selection_process", columnDefinition = "text")
     private String selectionProcess;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "job_level")
+    private JobLevel jobLevel;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "experience_level")
+    private ExperienceLevel experienceLevel;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "education_level")
+    private EducationLevel educationLevel;
+
+    private Integer headcount;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "employment_type")
+    private EmploymentType employmentType;
+
+    @Column(name = "address_detail", length = 500)
+    private String addressDetail;
+
+    @Column(name = "working_schedule", columnDefinition = "text")
+    private String workingSchedule;
+
+    @Column(columnDefinition = "text")
+    private String skills; // CSV hoặc JSON text kỹ năng
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -94,6 +132,13 @@ public class Opportunity {
 
     @Column(columnDefinition = "text")
     private String rejectionReason;
+
+    /** Ghi chú AI/Admin khi yêu cầu bổ sung hồ sơ / sửa tin (provider xem trên portal). */
+    @Column(name = "ai_moderation_note", columnDefinition = "text")
+    private String aiModerationNote;
+
+    @Column(name = "ai_scanned_at")
+    private Instant aiScannedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "moderated_by")

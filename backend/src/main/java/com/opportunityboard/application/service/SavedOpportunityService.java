@@ -71,9 +71,12 @@ public class SavedOpportunityService {
                 o.getOppId(), o.getTitle(), o.getSlug(),
                 o.getOrg().getOrgName(), logo, o.getBannerUrl(),
                 o.getCategory().getCode(), null,
-                o.getDeadline(), o.getWorkType(),
-                o.getLocation(), o.isFeatured(),
+                o.getDeadline(), o.getWorkType(), o.getLocation(),
+                o.getEmploymentType(), o.getJobLevel(), o.getExperienceLevel(),
+                o.getSalaryMin(), o.getSalaryMax(), o.getSalaryCurrency(), o.isSalaryNegotiable(),
+                o.isFeatured(),
                 o.getViewCount(), o.getBookmarkCount(),
-                o.getApplicationCount(), o.getShareCount());
+                o.getApplicationCount(), o.getShareCount(),
+                o.getStatus(), o.getRejectionReason(), o.getAiModerationNote());
     }
 }

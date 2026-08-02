@@ -8,4 +8,5 @@ import java.util.UUID;
 public interface OrganizationRepository extends JpaRepository<Organization, UUID> {
     List<Organization> findByOwnerUserUserId(UUID ownerUserId);
     List<Organization> findByVerifiedStatus(com.opportunityboard.domain.enums.OrgVerified status);
+    long countByVerifiedStatus(com.opportunityboard.domain.enums.OrgVerified status);
 }
