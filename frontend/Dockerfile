@@ -4,13 +4,10 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-# DO App Platform passes BUILD_TIME envs as Docker build-args (names must match).
-# VITE_BASE_PATH must be "/" for standalone FE app — never the API URL.
+# BUILD_TIME: only VITE_API_URL is needed from DO UI.
+# Always bake assets at "/" — never use API host as Vite base (fixes 403/MIME).
 ARG VITE_API_URL=
-ARG VITE_BASE_PATH=/
-RUN VITE_API_URL="${VITE_API_URL}" \
-    VITE_BASE_PATH="${VITE_BASE_PATH:-/}" \
-    npm run build
+RUN VITE_API_URL="${VITE_API_URL}" VITE_BASE_PATH=/ npm run build
 
 FROM nginx:1.27-alpine
 COPY nginx.conf /etc/nginx/conf.d/default.conf

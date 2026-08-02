@@ -1,11 +1,23 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+/**
+ * Vite `base` = path prefix for JS/CSS assets (NOT the API URL).
+ * - DigitalOcean FE app: /
+ * - GitHub Pages: /opportunity_borad/
+ * Reject absolute URLs / api/v1 mistaken for base (causes 403 + blank MIME).
+ */
+function resolveBase() {
+  const raw = (process.env.VITE_BASE_PATH || '').trim()
+  if (raw && !/^https?:\/\//i.test(raw) && !/api\/v1/i.test(raw)) {
+    return raw.endsWith('/') ? raw : `${raw}/`
+  }
+  return '/opportunity_borad/'
+}
+
 // Dev proxy: /api -> backend Spring Boot trên 8080
-// GitHub Pages: base=/opportunity_borad/ (default khi không set env)
-// DigitalOcean: set VITE_BASE_PATH=/ và HTTP route = /
 export default defineConfig({
-  base: process.env.VITE_BASE_PATH?.trim() || '/opportunity_borad/',
+  base: resolveBase(),
   plugins: [react()],
   server: {
     port: 5173,
