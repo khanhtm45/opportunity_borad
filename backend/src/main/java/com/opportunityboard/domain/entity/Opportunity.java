@@ -78,6 +78,9 @@ public class Opportunity {
 
     private String externalLink;
 
+    @Column(name = "external_ref")
+    private String externalRef; // mã tham chiếu bên thứ 3 ("case index ngoài")
+
     @Column(columnDefinition = "jsonb")
     private String internalForm; // cấu hình form nộp nội bộ
 

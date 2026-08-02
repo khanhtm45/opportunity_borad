@@ -20,6 +20,7 @@ public record OpportunityRequest(
         WorkType workType,
         ApplyMode applyMode,
         String externalLink,
+        String externalRef,
         String internalForm,
         String logoUrl,
         String bannerUrl,

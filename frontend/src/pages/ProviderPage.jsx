@@ -14,7 +14,7 @@ const EMPTY = {
   title: '', categoryCode: 'INTERNSHIP', workType: 'ONLINE', location: 'TOAN_QUOC',
   deadline: '', description: '', requirements: '', benefits: '',
   salaryOrReward: '', selectionProcess: '', applyMode: 'INTERNAL',
-  logoUrl: '', bannerUrl: '', externalLink: '',
+  logoUrl: '', bannerUrl: '', externalLink: '', externalRef: '',
 }
 
 export default function ProviderPage() {
@@ -153,6 +153,7 @@ export default function ProviderPage() {
             {form.applyMode === 'EXTERNAL' && (
               <input className="input-base" placeholder="External link (https://...)" value={form.externalLink || ''} onChange={(e) => setForm({ ...form, externalLink: e.target.value })} />
             )}
+            <input className="input-base" placeholder="Mã tham chiếu ngoài (case index, tùy chọn)" value={form.externalRef || ''} onChange={(e) => setForm({ ...form, externalRef: e.target.value })} />
             <div className="flex gap-2">
               <button className="btn-primary flex-1">{editing ? 'Lưu' : 'Tạo & Gửi duyệt'}</button>
               {editing && <button type="button" className="btn-ghost" onClick={() => { setEditing(null); setForm(EMPTY) }}>Huỷ</button>}
@@ -171,7 +172,7 @@ export default function ProviderPage() {
                     <p className="text-sm font-semibold text-slate-700">{o.title}</p>
                     <span className={`chip ${OPP_STATUS_STYLES[o.status] || 'bg-slate-100'}`}>{STATUS_LABELS[o.status] || o.status}</span>
                   </div>
-                  <p className="text-xs text-slate-400">Hạn {fmtDate(o.deadline)} · {o.applicationCount || 0} ứng tuyển</p>
+                  <p className="text-xs text-slate-400">Hạn {fmtDate(o.deadline)} · {o.applicationCount || 0} ứng tuyển{o.externalRef ? ` · Mã: ${o.externalRef}` : ''}</p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     <button className="chip-btn" onClick={() => openEdit(o)}>Sửa</button>
                     {o.status === 'APPROVED' && <button className="chip-btn" onClick={() => doHide(o)}>Ẩn</button>}

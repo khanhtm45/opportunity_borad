@@ -193,7 +193,7 @@ public class OpportunityService {
                 .benefits(req.benefits())
                 .salaryOrReward(req.salaryOrReward()).selectionProcess(req.selectionProcess())
                 .location(req.location()).workType(req.workType())
-                .applyMode(req.applyMode()).externalLink(req.externalLink()).internalForm(req.internalForm())
+                .applyMode(req.applyMode()).externalLink(req.externalLink()).externalRef(req.externalRef()).internalForm(req.internalForm())
                 .logoUrl(req.logoUrl()).bannerUrl(req.bannerUrl())
                 .deadline(req.deadline()).status(OppStatus.DRAFT)
                 .slug(slugify(req.title())).build();
@@ -231,6 +231,7 @@ public class OpportunityService {
         o.setSalaryOrReward(req.salaryOrReward()); o.setSelectionProcess(req.selectionProcess());
         o.setLocation(req.location()); o.setWorkType(req.workType());
         o.setApplyMode(req.applyMode()); o.setExternalLink(req.externalLink());
+        o.setExternalRef(req.externalRef());
         o.setInternalForm(req.internalForm());
         o.setLogoUrl(req.logoUrl()); o.setBannerUrl(req.bannerUrl());
         o.setDeadline(req.deadline());
