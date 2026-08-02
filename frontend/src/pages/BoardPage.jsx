@@ -99,7 +99,7 @@ export default function BoardPage() {
 
         <div className="relative">
           <h1 className="text-2xl font-extrabold drop-shadow md:text-3xl">Khám phá cơ hội dành cho sinh viên</h1>
-          <p className="mt-2 max-w-xl text-sm text-white/85">
+          <p className="mt-2 max-w-xl text-sm text-white/90">
             Thực tập · Hackathon · Học bổng · Khởi nghiệp — tất cả trong một bảng tin.
           </p>
           <div className="mt-5">
@@ -119,7 +119,7 @@ export default function BoardPage() {
                   <li key={k}>
                     <button onClick={() => toggleCat(k)}
                       className={`flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition ${
-                        filters.categories.includes(k) ? 'bg-brand-50 font-medium text-brand-700' : 'text-slate-600 hover:bg-slate-50'}`}>
+                        filters.categories.includes(k) ? 'bg-brand-50 font-medium text-brand-700' : 'text-slate-700 hover:bg-slate-50'}`}>
                       <span className="flex items-center gap-2">
                         <svg className="h-4 w-4 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
                           <path strokeLinecap="round" strokeLinejoin="round" d={CAT_ICONS[k] || CAT_ICONS.INTERNSHIP} />
@@ -133,7 +133,7 @@ export default function BoardPage() {
               </ul>
             </div>
 
-            <div className="flex items-start gap-2 rounded-2xl border border-slate-100 bg-white p-4 text-xs text-slate-400 shadow-card">
+            <div className="flex items-start gap-2 rounded-2xl border border-slate-100 bg-white p-4 text-xs text-slate-500 shadow-card">
               <svg className="mt-0.5 h-4 w-4 shrink-0 text-gold-500" viewBox="0 0 24 24" fill="currentColor">
                 <path d={ICON_BOLT} />
               </svg>
@@ -145,19 +145,19 @@ export default function BoardPage() {
                 <h3 className="mb-2 text-sm font-bold text-slate-700">Cá nhân</h3>
                 <ul className="space-y-1">
                   <li>
-                    <Link to="/me/bookmarks" className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-slate-600 hover:bg-slate-50">
+                    <Link to="/me/bookmarks" className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50">
                       <svg className="h-4 w-4 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path strokeLinecap="round" strokeLinejoin="round" d={ICON_BOOKMARK} /></svg>
                       Đã lưu
                     </Link>
                   </li>
                   <li>
-                    <Link to="/me/applications" className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-slate-600 hover:bg-slate-50">
+                    <Link to="/me/applications" className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50">
                       <svg className="h-4 w-4 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path strokeLinecap="round" strokeLinejoin="round" d={ICON_DOC} /></svg>
                       Đơn của tôi
                     </Link>
                   </li>
                   <li>
-                    <Link to="/me/notifications" className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-slate-600 hover:bg-slate-50">
+                    <Link to="/me/notifications" className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50">
                       <svg className="h-4 w-4 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path strokeLinecap="round" strokeLinejoin="round" d={ICON_BELL} /></svg>
                       Thông báo
                     </Link>
@@ -182,13 +182,13 @@ export default function BoardPage() {
           <section>
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-800">Tất cả cơ hội</h2>
-              <span className="text-xs text-slate-400">{items.length} / {total} kết quả</span>
+              <span className="text-xs text-slate-500">{items.length} / {total} kết quả</span>
             </div>
 
             {loading && items.length === 0 ? (
               <div className="py-16 text-center"><InlineLoader label="Đang tải bảng tin…" /></div>
             ) : items.length === 0 ? (
-              <div className="py-16 text-center text-slate-400">Chưa có cơ hội nào phù hợp.</div>
+              <div className="py-16 text-center text-slate-500">Chưa có cơ hội nào phù hợp.</div>
             ) : (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {items.map((o) => <OpportunityCard key={o.oppId} opp={o} />)}

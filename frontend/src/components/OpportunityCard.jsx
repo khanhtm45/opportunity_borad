@@ -28,7 +28,7 @@ export default function OpportunityCard({ opp }) {
             </div>
           )}
           <div>
-            <p className="text-xs font-medium text-slate-400">{opp.orgName}</p>
+            <p className="text-xs font-medium text-slate-500">{opp.orgName}</p>
             <h3 className="line-clamp-2 text-[15px] font-bold leading-snug text-slate-800 group-hover:text-brand-700">
               {opp.title}
             </h3>
@@ -68,7 +68,7 @@ export default function OpportunityCard({ opp }) {
         </span>
       </div>
 
-      <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400">
+      <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
         <span className="flex items-center gap-1">
           <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path strokeLinecap="round" strokeLinejoin="round" d={ICON_EYE} /></svg>
           {opp.viewCount || 0} lượt xem
