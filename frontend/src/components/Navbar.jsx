@@ -9,7 +9,7 @@ export default function Navbar() {
 
   // Các mục nav chính (khớp thiết kế: Trang chủ / Bảng tin / Khám phá / Cá nhân)
   const navItems = [
-    { to: '/home', label: 'Trang chủ' },
+    { to: '/home', label: 'Giới thiệu' },
     { to: '/board', label: 'Bảng tin' },
     { to: '/explore', label: 'Khám phá' },
   ]
@@ -17,6 +17,7 @@ export default function Navbar() {
 
   const isActive = (to) => {
     if (to === '/me') return pathname === '/me' || pathname.startsWith('/me/')
+    if (to === '/home') return pathname === '/' || pathname === '/home'
     return pathname === to || (to !== '/' && pathname.startsWith(to))
   }
 

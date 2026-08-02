@@ -74,6 +74,8 @@ CREATE TABLE organizations (
     org_name        VARCHAR(200) NOT NULL,
     logo_url        VARCHAR(512),
     website         VARCHAR(255),
+    contact_email   VARCHAR(255),
+    contact_phone   VARCHAR(40),
     description     TEXT,
     verified_status org_verified NOT NULL DEFAULT 'PENDING',
     verified_at     TIMESTAMP,
@@ -124,6 +126,14 @@ CREATE TABLE domains (
     created_at  TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+-- Seed lĩnh vực lọc / notification preference
+INSERT INTO domains (domain_id, domain_name) VALUES
+('d0000000-0000-4000-8000-000000000001', 'IT'),
+('d0000000-0000-4000-8000-000000000002', 'Marketing'),
+('d0000000-0000-4000-8000-000000000003', 'Tài chính'),
+('d0000000-0000-4000-8000-000000000004', 'Thiết kế'),
+('d0000000-0000-4000-8000-000000000005', 'Khởi nghiệp');
+
 -- ---------------------------------------------------------------------------
 -- 6. OPPORTUNITIES  (Mục 4: bổ sung is_external, featured*, counters, slug, rejection)
 -- ---------------------------------------------------------------------------
@@ -134,9 +144,13 @@ CREATE TABLE opportunities (
     category_id      UUID NOT NULL REFERENCES categories(category_id),
     title            VARCHAR(200) NOT NULL,
     slug             VARCHAR(220) NOT NULL UNIQUE,
+    logo_url         VARCHAR(512),
+    banner_url       VARCHAR(512),
     description      TEXT NOT NULL,                       -- đã SANITIZE (chống XSS)
     requirements     TEXT,
     benefits         TEXT,
+    salary_or_reward TEXT,
+    selection_process TEXT,
     location         location_type NOT NULL DEFAULT 'TOAN_QUOC',
     work_type        work_type NOT NULL DEFAULT 'OFFLINE',
     apply_mode       apply_mode NOT NULL,                 -- INTERNAL | EXTERNAL
@@ -154,6 +168,7 @@ CREATE TABLE opportunities (
     view_count       INT NOT NULL DEFAULT 0,
     bookmark_count   INT NOT NULL DEFAULT 0,
     application_count INT NOT NULL DEFAULT 0,
+    share_count      INT NOT NULL DEFAULT 0,
     published_at     TIMESTAMP,
     created_at       TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at       TIMESTAMP NOT NULL DEFAULT NOW(),

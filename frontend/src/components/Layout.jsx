@@ -1,12 +1,17 @@
 import Navbar from './Navbar.jsx'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { CATEGORY_LABELS } from '../lib/constants.js'
 
 export default function Layout({ children }) {
+  const { pathname } = useLocation()
+  const isPitch = pathname === '/' || pathname === '/home'
+
   return (
     <div className="flex min-h-full flex-col bg-slate-50">
       <Navbar />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>
+      <main className={isPitch ? 'w-full flex-1' : 'mx-auto w-full max-w-6xl flex-1 px-4 py-6'}>
+        {children}
+      </main>
       <footer className="mt-10 border-t border-slate-200 bg-white">
         <div className="mx-auto max-w-6xl px-4 py-8">
           <div className="grid gap-6 md:grid-cols-2">
@@ -26,7 +31,7 @@ export default function Layout({ children }) {
             </div>
           </div>
           <p className="mt-6 border-t border-slate-100 pt-4 text-center text-xs text-slate-400">
-            © 2025 Opportunity Board · Bảng tin Cơ hội Sinh viên
+            © 2026 Opportunity Board · Bảng tin Cơ hội Sinh viên
           </p>
         </div>
       </footer>
