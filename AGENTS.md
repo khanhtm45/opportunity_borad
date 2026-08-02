@@ -10,7 +10,7 @@ DB is Supabase PostgreSQL. FE deploys to GitHub Pages; BE JAR to GitHub Releases
 | API | `backend/` | Java 17+/21, Spring Boot 3.3, JWT, JPA |
 | Web | `frontend/` | React 18, Vite 5, Tailwind, axios |
 | CI | `.github/workflows/` | `ci.yml` (test/Sonar), `deploy.yml` (Pages + Releases) |
-| DO | `.do/app.yaml`, `backend/Dockerfile` | App Platform runtime |
+| DO | `.do/app-api.yaml` + `.do/app-frontend.yaml` (2 apps riêng) | App Platform |
 | Env templates | `.env.example`, `backend/.env.example`, `frontend/.env.example` | Cloud/local secrets |
 
 ## Build & test
@@ -47,5 +47,5 @@ Local API: `http://localhost:8080` with Vite proxy `/api` → `:8080`.
 ## Useful commands for agents
 
 - Deploy FE Pages + BE release: push `main` → `deploy.yml`
-- DigitalOcean: source directory `backend`, Dockerfile `backend/Dockerfile`, port `8080`
-- Set GitHub Variable `VITE_API_URL=https://<do-app>.ondigitalocean.app/api/v1` after BE is live
+- DigitalOcean: BE app = `backend/` → `oyster-app-eleoo`; FE app = `frontend/` → `shark-app-epimy`
+- FE `VITE_API_URL=https://oyster-app-eleoo.ondigitalocean.app/api/v1`; `VITE_BASE_PATH=/` (never swap)

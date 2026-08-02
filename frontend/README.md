@@ -51,13 +51,13 @@ npm run build    # dist/ production
 ### Deploy
 Push `main`:
 - **FE → GitHub Pages:** `https://khanhtm45.github.io/opportunity_borad/` ([`deploy.yml`](../.github/workflows/deploy.yml))
-- **BE runtime → DigitalOcean App Platform:** [`.do/app.yaml`](../.do/app.yaml) + [`backend/Dockerfile`](../backend/Dockerfile) (auto deploy khi push, vì đã link GitHub)
+- **DO = 2 app riêng:** [`.do/app-api.yaml`](../.do/app-api.yaml) (BE / oyster) + [`.do/app-frontend.yaml`](../.do/app-frontend.yaml) (FE / shark)
 - **BE artifact → GitHub Releases:** fat JAR `backend-<run_number>`
 
 Setup:
-1. [DigitalOcean Apps](https://cloud.digitalocean.com/apps) → Create App → GitHub `khanhtm45/opportunity_borad` → dùng Dockerfile `backend/Dockerfile` → set secrets `JWT_SECRET`, `DB_PASSWORD`.
-2. Copy URL app (vd `https://….ondigitalocean.app`) → GitHub **Variables** `VITE_API_URL` = `https://….ondigitalocean.app/api/v1` → re-run Deploy Pages.
-3. Pages Source = GitHub Actions.
+1. DO **API app**: source `backend/`, Dockerfile `Dockerfile`, route `/api`, secrets `JWT_SECRET`, `DB_PASSWORD` → `https://oyster-app-eleoo.ondigitalocean.app/api/v1`
+2. DO **FE app**: source `frontend/`, `VITE_BASE_PATH=/`, `VITE_API_URL=https://oyster-app-eleoo.ondigitalocean.app/api/v1` → Force Rebuild
+3. GitHub **Variables** `VITE_API_URL` = URL API ở bước 1 → Deploy Pages; Pages Source = GitHub Actions.
 
 Local: không set `VITE_API_URL` → `/api/v1` + Vite proxy `:8080`.
 

@@ -1,0 +1,42 @@
+# DigitalOcean App — FRONTEND ONLY
+# App hiện tại: https://shark-app-epimy.ondigitalocean.app
+# API riêng:     https://oyster-app-eleoo.ondigitalocean.app/api/v1
+#
+# UI checklist (TRÁNH trang trắng / asset 403):
+# - 1 component Web Service (Docker) — KHÔNG Static Site
+# - Source Directory = frontend
+# - Dockerfile path = Dockerfile
+# - HTTP Port = 8080 ; HTTP Route = /
+# - Run Command = /docker-entrypoint-ob.sh
+# - BUILD_TIME (đúng 2 biến, đừng đảo):
+#     VITE_BASE_PATH = /
+#     VITE_API_URL   = https://oyster-app-eleoo.ondigitalocean.app/api/v1
+# - Sau khi sửa env → Force Rebuild
+
+name: opportunity-board-frontend
+region: sgp
+
+services:
+  - name: frontend
+    github:
+      repo: khanhtm45/opportunity_borad
+      branch: main
+      deploy_on_push: true
+    source_dir: frontend
+    dockerfile_path: Dockerfile
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    run_command: /docker-entrypoint-ob.sh
+    routes:
+      - path: /
+    envs:
+      - key: PORT
+        scope: RUN_TIME
+        value: "8080"
+      - key: VITE_BASE_PATH
+        scope: BUILD_TIME
+        value: "/"
+      - key: VITE_API_URL
+        scope: BUILD_TIME
+        value: "https://oyster-app-eleoo.ondigitalocean.app/api/v1"

@@ -1,11 +1,13 @@
 # Deploy:
 # - FE → GitHub Pages (https://khanhtm45.github.io/opportunity_borad/)
-# - BE → GitHub Releases (fat JAR) + runtime trên DigitalOcean App Platform
-#   (xem .do/app.yaml — DO auto-deploy từ GitHub khi push main)
+# - BE → GitHub Releases (fat JAR) + DigitalOcean (2 apps riêng, xem .do/)
+#     BE: .do/app-api.yaml      → oyster-app-eleoo
+#     FE: .do/app-frontend.yaml → shark-app-epimy
 #
 # Setup:
-# - DO: Create App từ repo, Dockerfile = backend/Dockerfile, set secrets JWT_SECRET + DB_PASSWORD
-# - GitHub Variables → VITE_API_URL = https://<app>.ondigitalocean.app/api/v1
+# - DO API app: source backend/, secrets JWT_SECRET + DB_PASSWORD
+# - DO FE app: source frontend/, BUILD_TIME VITE_BASE_PATH=/ + VITE_API_URL=…/api/v1
+# - GitHub Variables → VITE_API_URL = https://oyster-app-eleoo.ondigitalocean.app/api/v1
 # - Pages: configure-pages enablement=true
 
 name: Deploy — Pages + Releases

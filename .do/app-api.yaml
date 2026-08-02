@@ -1,0 +1,48 @@
+# DigitalOcean App — BACKEND ONLY
+# App hiện tại: https://oyster-app-eleoo.ondigitalocean.app
+#
+# UI checklist:
+# - 1 component Web Service (Docker)
+# - Source Directory = backend
+# - Dockerfile path = Dockerfile
+# - HTTP Port = 8080
+# - HTTP Route = /api   (URL public: …/api/v1/…)
+# - Run Command = java -jar app.jar
+# - Secrets RUN_TIME: DB_PASSWORD, JWT_SECRET (+ DB_URL/DB_USERNAME nếu không dùng default)
+
+name: opportunity-board-api
+region: sgp
+
+services:
+  - name: api
+    github:
+      repo: khanhtm45/opportunity_borad
+      branch: main
+      deploy_on_push: true
+    source_dir: backend
+    dockerfile_path: Dockerfile
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    run_command: java -jar app.jar
+    routes:
+      - path: /api
+    health_check:
+      http_path: /api/v1/categories
+      initial_delay_seconds: 90
+      period_seconds: 20
+      timeout_seconds: 10
+      success_threshold: 1
+      failure_threshold: 10
+    envs:
+      - key: PORT
+        scope: RUN_TIME
+        value: "8080"
+      - key: DB_PASSWORD
+        scope: RUN_TIME
+        type: SECRET
+        value: SET_IN_DIGITALOCEAN_UI
+      - key: JWT_SECRET
+        scope: RUN_TIME
+        type: SECRET
+        value: CHANGE_ME_SET_IN_DO_UI_32chars_min!!
