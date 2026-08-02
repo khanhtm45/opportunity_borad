@@ -16,7 +16,8 @@ DB is Supabase PostgreSQL. FE deploys to GitHub Pages; BE JAR to GitHub Releases
 ## Build & test
 
 ```bash
-# Backend
+# Backend (integration tests = Testcontainers Postgres + Docker;
+# không nối/TRUNCATE Supabase production)
 cd backend && mvn -B verify
 
 # Frontend

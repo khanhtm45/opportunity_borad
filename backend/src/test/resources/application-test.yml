@@ -1,18 +1,20 @@
-# Test profile — chạy integration test.
-# Mặc định dùng Supabase (đã có schema chạy sẵn) để không phụ thuộc Docker.
-# Nếu muốn isolation hoàn toàn, bật Docker + Testcontainers (xem AbstractIntegrationTest).
+# Test profile — KHÔNG dùng Supabase production.
+# Datasource được AbstractIntegrationTest ghi đè bằng Testcontainers PostgreSQL.
+# Mỗi lần push/CI trước đây TRUNCATE DB thật → mất seed demo; đã tách hẳn.
 spring:
   datasource:
-    url: jdbc:postgresql://aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres?sslmode=require&prepareThreshold=0&preparedStatementCacheSize=0&stringtype=unspecified
-    username: postgres.cmmypmpxisysrnqoqfdv
-    password: ${DB_PASSWORD:KhanhMinh0@}
+    url: jdbc:postgresql://127.0.0.1:1/disabled-use-testcontainers
+    username: test
+    password: test
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: none
     show-sql: false
   flyway:
-    enabled: false
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
   mail:
     host: localhost
     port: 25
@@ -29,8 +31,11 @@ app:
     site-url: https://example.com
     site-name: Opportunity Board Test
     timeout-seconds: 30
+  s3:
+    enabled: ""
 
 logging:
   level:
     com.opportunityboard: WARN
     org.springframework: WARN
+    org.testcontainers: INFO
