@@ -91,11 +91,9 @@ public class ApplicationAiScanService {
         User student = app.getStudent();
         StudentProfile profile = studentProfileRepository.findByUserUserId(student.getUserId()).orElse(null);
 
-        String prompt = buildPrompt(opp, app, student, profile, criteria);
-        List<String> media = List.of();
-        if (looksLikeMedia(app.getCvFile())) {
-            media = List.of(mediaLinkService.resolveFetchableUrl(app.getCvFile()));
-        }
+        String cvFetchUrl = mediaLinkService.resolveFetchableUrlOrNull(app.getCvFile());
+        String prompt = buildPrompt(opp, app, student, profile, criteria, cvFetchUrl != null);
+        List<String> media = cvFetchUrl != null ? List.of(cvFetchUrl) : List.of();
 
         String raw = openRouterClient.chat(SYSTEM_PROMPT, OpenRouterClient.textAndImages(prompt, media));
         ApplicationAiScanResponse parsed = parse(app, student, criteria, raw);
@@ -169,7 +167,7 @@ public class ApplicationAiScanService {
             """;
 
     private String buildPrompt(Opportunity opp, Application app, User student,
-                               StudentProfile profile, String criteria) {
+                               StudentProfile profile, String criteria, boolean hasCvMedia) {
         StringBuilder sb = new StringBuilder();
         sb.append("## Tiêu chuẩn screening (nhà đăng nhập)\n");
         sb.append(criteria.trim()).append("\n\n");
@@ -189,7 +187,12 @@ public class ApplicationAiScanService {
             sb.append("- Bio: ").append(truncate(profile.getBio(), 300)).append('\n');
         }
         sb.append("- Cover letter: ").append(truncate(app.getCoverLetter(), 400)).append('\n');
-        sb.append("- CV URL: ").append(app.getCvFile()).append('\n');
+        sb.append("- CV stored: ").append(nullToDash(app.getCvFile())).append('\n');
+        if (!hasCvMedia) {
+            sb.append("\n⚠ Không có URL CV hợp lệ để đọc file (chỉ tên file / link hỏng). ")
+                    .append("Đánh giá theo profile + cover letter; verdict ưu tiên REVIEW; ")
+                    .append("recommendations: yêu cầu SV upload lại CV (S3/http).\n");
+        }
         sb.append("\nĐánh giá CV/hồ sơ theo TIÊU CHUẨN screening (ưu tiên hơn yêu cầu tin nếu khác nhau).");
         return sb.toString();
     }
@@ -278,16 +281,6 @@ public class ApplicationAiScanService {
             });
         }
         return out;
-    }
-
-    private boolean looksLikeMedia(String url) {
-        if (url == null) return false;
-        if (MediaLinkService.isManagedRef(url)) return true;
-        String u = url.toLowerCase(Locale.ROOT);
-        return u.endsWith(".png") || u.endsWith(".jpg") || u.endsWith(".jpeg")
-                || u.endsWith(".webp") || u.endsWith(".gif") || u.endsWith(".pdf")
-                || u.contains(".png?") || u.contains(".jpg?") || u.contains(".jpeg?")
-                || u.contains(".pdf?") || u.contains(".webp?");
     }
 
     private static String nullToDash(String s) {

@@ -61,8 +61,8 @@ public class OpportunityDocumentScanService {
         String prompt = buildPrompt(opp, org, docs);
         List<String> mediaUrls = docs.stream()
                 .map(OpportunityDocument::getFileUrl)
-                .filter(this::looksLikeMedia)
-                .map(mediaLinkService::resolveFetchableUrl)
+                .map(mediaLinkService::resolveFetchableUrlOrNull)
+                .filter(u -> u != null && !u.isBlank())
                 .limit(8)
                 .collect(Collectors.toList());
 

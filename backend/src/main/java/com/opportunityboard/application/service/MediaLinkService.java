@@ -99,11 +99,37 @@ public class MediaLinkService {
                 .toString();
     }
 
-    /** Cho AI / client: nếu ob-s3 → presign; http thường → giữ nguyên. */
+    /** URL OpenRouter/Gemini có thể tải được (http/https hoặc ob-s3 đã resolve). */
+    public static boolean isHttpOrHttpsUrl(String value) {
+        if (value == null || value.isBlank()) return false;
+        String v = value.trim().toLowerCase(java.util.Locale.ROOT);
+        return v.startsWith("http://") || v.startsWith("https://");
+    }
+
+    /**
+     * Cho AI / client: ob-s3 → presign; http(s) → giữ nguyên.
+     * Tên file kiểu {@code cv.pdf} không phải URL — trả nguyên (caller phải lọc).
+     */
     public String resolveFetchableUrl(String stored) {
         if (stored == null || stored.isBlank()) return stored;
         if (isManagedRef(stored)) return presignGet(stored, Duration.ofMinutes(20));
         return stored;
+    }
+
+    /**
+     * Chỉ trả URL thật để multimodal AI đọc file.
+     * Bỏ qua filename local ({@code cv.pdf}) — tránh OpenRouter 400 Invalid URL format.
+     */
+    public String resolveFetchableUrlOrNull(String stored) {
+        if (stored == null || stored.isBlank()) return null;
+        if (isManagedRef(stored)) {
+            try {
+                return presignGet(stored, Duration.ofMinutes(20));
+            } catch (Exception ex) {
+                return null;
+            }
+        }
+        return isHttpOrHttpsUrl(stored) ? stored.trim() : null;
     }
 
     public String resolveForDisplay(String stored, boolean signManaged) {

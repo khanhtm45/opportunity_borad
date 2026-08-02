@@ -92,9 +92,13 @@ public class OpenRouterClient {
         if (mediaUrls != null) {
             for (String url : mediaUrls) {
                 if (url == null || url.isBlank()) continue;
+                String u = url.trim();
+                // Gemini/OpenRouter chỉ chấp nhận http(s) — bỏ filename kiểu cv.pdf
+                String lower = u.toLowerCase();
+                if (!(lower.startsWith("http://") || lower.startsWith("https://"))) continue;
                 parts.add(Map.of(
                         "type", "image_url",
-                        "image_url", Map.of("url", url.trim())
+                        "image_url", Map.of("url", u)
                 ));
             }
         }

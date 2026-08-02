@@ -86,8 +86,8 @@ public class ProviderDocumentScanService {
         // ob-s3:// → presign tạm; http giữ nguyên (Gemini đọc được URL tạm)
         List<String> mediaUrls = docs.stream()
                 .map(OrgDocument::getFileUrl)
-                .filter(this::looksLikeMedia)
-                .map(mediaLinkService::resolveFetchableUrl)
+                .map(mediaLinkService::resolveFetchableUrlOrNull)
+                .filter(u -> u != null && !u.isBlank())
                 .limit(8)
                 .collect(Collectors.toList());
 
