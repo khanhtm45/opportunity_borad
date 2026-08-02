@@ -39,8 +39,21 @@ DELETE FROM opportunity_domains
    JOIN users u ON u.user_id = o.created_by
    WHERE u.email LIKE '%@demo.ob.local'
  );
+-- V5+ hồ sơ tin / org (nếu bảng đã có)
+DELETE FROM opportunity_documents
+ WHERE opp_id IN (
+   SELECT o.opp_id FROM opportunities o
+   JOIN users u ON u.user_id = o.created_by
+   WHERE u.email LIKE '%@demo.ob.local'
+ );
 DELETE FROM opportunities
  WHERE created_by IN (SELECT user_id FROM users WHERE email LIKE '%@demo.ob.local');
+DELETE FROM org_documents
+ WHERE org_id IN (
+   SELECT org.org_id FROM organizations org
+   JOIN users u ON u.user_id = org.owner_user_id
+   WHERE u.email LIKE '%@demo.ob.local'
+ );
 DELETE FROM org_members
  WHERE user_id IN (SELECT user_id FROM users WHERE email LIKE '%@demo.ob.local');
 DELETE FROM organizations
@@ -124,6 +137,18 @@ INSERT INTO org_members (org_member_id, org_id, user_id, member_role) VALUES
    'a0000000-0000-4000-8000-000000000004', 'OWNER'),
   ('e0000000-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000002',
    'a0000000-0000-4000-8000-000000000005', 'OWNER');
+
+-- 5b) Hồ sơ tổ chức (AI lớp 1) — placeholder URL
+INSERT INTO org_documents (doc_id, org_id, doc_type, title, file_url, created_at) VALUES
+  ('0d000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000001',
+   'BUSINESS_LICENSE', 'GPKD FPT Software Academy (demo)',
+   'https://placehold.co/800x1100/0388ED/FFFFFF/png?text=GPKD+FPT', NOW()),
+  ('0d000000-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000001',
+   'TAX_CODE', 'MST demo FPT',
+   'https://placehold.co/800x600/0d9488/FFFFFF/png?text=MST+0101234567', NOW()),
+  ('0d000000-0000-4000-8000-000000000003', 'c0000000-0000-4000-8000-000000000002',
+   'BUSINESS_LICENSE', 'GPKD Startup Hub (demo)',
+   'https://placehold.co/800x1100/F69022/FFFFFF/png?text=GPKD+SHV', NOW());
 
 -- 6) Opportunities (7 categories, APPROVED + 1 PENDING + 1 featured)
 -- created_at phải < deadline (constraint chk_deadline_future)
@@ -337,6 +362,18 @@ FROM (VALUES
 ) AS x(opp, domain_name)
 JOIN domains d ON d.domain_name = x.domain_name
 ON CONFLICT DO NOTHING;
+
+-- 7b) Hồ sơ tin đăng (AI lớp 2) — vài tin demo chính
+INSERT INTO opportunity_documents (doc_id, opp_id, doc_type, title, file_url, created_at) VALUES
+  ('0e000000-0000-4000-8000-000000000001', 'f0000000-0000-4000-8000-000000000001',
+   'PROGRAM_PROOF', 'Mô tả chương trình thực tập Java (demo)',
+   'https://placehold.co/800x1100/0388ED/FFFFFF/png?text=Program+Java+Intern', NOW()),
+  ('0e000000-0000-4000-8000-000000000002', 'f0000000-0000-4000-8000-000000000004',
+   'PARTNERSHIP_LETTER', 'Thư hợp tác OppHack (demo)',
+   'https://placehold.co/800x1100/0736ac/FFFFFF/png?text=Partnership+Hackathon', NOW()),
+  ('0e000000-0000-4000-8000-000000000003', 'f0000000-0000-4000-8000-000000000002',
+   'PROGRAM_PROOF', 'JD Marketing Intern (demo)',
+   'https://placehold.co/800x1100/F69022/FFFFFF/png?text=Marketing+JD', NOW());
 
 -- 8) Applications + history
 INSERT INTO applications (
