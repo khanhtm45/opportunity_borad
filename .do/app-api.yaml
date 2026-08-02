@@ -38,6 +38,15 @@ services:
       - key: PORT
         scope: RUN_TIME
         value: "8080"
+      - key: MEDIA_PUBLIC_BASE_URL
+        scope: RUN_TIME
+        value: "https://oyster-app-eleoo.ondigitalocean.app/api/v1"
+      - key: UPLOAD_STORAGE
+        scope: RUN_TIME
+        value: "s3"
+      - key: S3_REGION
+        scope: RUN_TIME
+        value: "ap-southeast-2"
       - key: DB_PASSWORD
         scope: RUN_TIME
         type: SECRET
@@ -46,3 +55,6 @@ services:
         scope: RUN_TIME
         type: SECRET
         value: CHANGE_ME_SET_IN_DO_UI_32chars_min!!
+      # Secrets bổ sung (set trên DO UI, không commit giá trị thật):
+      # OPENROUTER_API_KEY, S3_BUCKET, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+      # OPENROUTER_MODEL=google/gemini-3-flash-preview
