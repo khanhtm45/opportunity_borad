@@ -9,7 +9,8 @@ export default function BookmarksPage() {
 
   useEffect(() => {
     api.get('/me/bookmarks?size=50')
-      .then((r) => setItems((r.data.items || []).map((x) => x.opportunity)))
+      // API trả OpportunityResponse trực tiếp trong items (không bọc { opportunity })
+      .then((r) => setItems((r.data.items || []).map((x) => x?.opportunity || x).filter(Boolean)))
       .catch(() => setItems([]))
       .finally(() => setLoading(false))
   }, [])

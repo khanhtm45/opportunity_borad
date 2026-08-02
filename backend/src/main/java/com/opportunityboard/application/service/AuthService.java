@@ -94,6 +94,7 @@ public class AuthService {
                 .address(req.address())
                 .industry(req.industry())
                 .companySize(req.companySize())
+                .logoUrl(req.logoUrl())
                 .verifiedStatus(OrgVerified.PENDING)
                 .build();
         org = organizationRepository.save(org);

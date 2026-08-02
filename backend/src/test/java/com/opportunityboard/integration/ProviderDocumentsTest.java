@@ -52,7 +52,7 @@ class ProviderDocumentsTest extends AbstractIntegrationTest {
     void register_provider_requires_documents() {
         cleanupUser("prov-nodoc@test.com");
         ProviderRegisterRequest req = new ProviderRegisterRequest(
-                "Org NoDoc", null, null, "prov-nodoc@test.com", null, null, null, null, null,
+                "Org NoDoc", null, null, "prov-nodoc@test.com", null, null, null, null, null, null,
                 "Prov", "password123", List.of());
         assertThrows(BadRequestException.class, () -> authService.registerProvider(req));
     }
@@ -62,7 +62,7 @@ class ProviderDocumentsTest extends AbstractIntegrationTest {
         cleanupUser("prov-docs@test.com");
         ProviderRegisterRequest req = new ProviderRegisterRequest(
                 "Org Docs", "https://org.example", "desc", "prov-docs@test.com", "0900000000",
-                "0123456789", "Hà Nội", "IT", null, "Prov Docs", "password123",
+                "0123456789", "Hà Nội", "IT", null, null, "Prov Docs", "password123",
                 List.of(new OrgDocumentInput(OrgDocType.TAX_CODE, "MST", "https://example.com/mst.pdf")));
         authService.registerProvider(req);
         User u = userRepository.findByEmail("prov-docs@test.com").orElseThrow();

@@ -66,7 +66,9 @@ Production: `https://oyster-app-eleoo.ondigitalocean.app/api/swagger-ui.html`
 ```json
 {
   "orgName": "...", "contactEmail": "...", "contactFullName": "...", "password": "...",
-  "documents": [{ "docType": "BUSINESS_LICENSE", "title": "GPKD", "fileUrl": "https://..." }]
+  "contactPhone": "...", "taxCode": "...", "address": "...", "industry": "...",
+  "companySize": "SIZE_11_50", "website": "https://...", "description": "...", "logoUrl": "ob-s3://...",
+  "documents": [{ "docType": "BUSINESS_LICENSE", "title": "GPKD", "fileUrl": "ob-s3://..." }]
 }
 ```
 

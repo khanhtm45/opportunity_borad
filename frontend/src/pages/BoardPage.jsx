@@ -35,7 +35,7 @@ export default function BoardPage() {
   const loadFeatured = async () => {
     try {
       const { data } = await api.get('/opportunities/featured')
-      setFeatured(data || [])
+      setFeatured(Array.isArray(data) ? data : (data?.items || []))
     } catch {}
   }
 

@@ -9,7 +9,10 @@ export const studentApi = {
   upload: (file, purpose = 'cv') => {
     const fd = new FormData()
     fd.append('file', file)
-    return api.post('/me/uploads', fd, { params: { purpose } }).then((r) => r.data)
+    return api.post('/me/uploads', fd, {
+      params: { purpose },
+      headers: { 'Content-Type': undefined },
+    }).then((r) => r.data)
   },
   myApplications: (params = {}) => api.get('/me/applications', { params }).then((r) => r.data?.items || []),
   appDetail: (appId) => api.get(`/me/applications/${appId}`).then((r) => r.data),

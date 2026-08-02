@@ -9,10 +9,19 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-// Gắn access token vào mọi request
+// Gắn access token; FormData phải để browser set multipart + boundary
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken')
   if (token) config.headers.Authorization = `Bearer ${token}`
+  if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+    // Default instance header 'application/json' làm Spring từ chối upload
+    if (typeof config.headers?.delete === 'function') {
+      config.headers.delete('Content-Type')
+    } else if (config.headers) {
+      delete config.headers['Content-Type']
+      delete config.headers['content-type']
+    }
+  }
   return config
 })
 

@@ -47,6 +47,7 @@ export function AuthProvider({ children }) {
         address: payload.address || undefined,
         industry: payload.industry || undefined,
         companySize: payload.companySize || undefined,
+        logoUrl: payload.logoUrl || undefined,
         contactFullName: payload.fullName,
         password: payload.password,
         documents: payload.documents,

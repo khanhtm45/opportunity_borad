@@ -19,6 +19,7 @@ public record ProviderRegisterRequest(
         @Size(max = 500) String address,
         @Size(max = 200) String industry,
         CompanySize companySize,
+        @Size(max = 512) String logoUrl,
         @NotBlank String contactFullName,
         @Size(min = 8, max = 128) String password,
         @NotEmpty @Valid List<OrgDocumentInput> documents

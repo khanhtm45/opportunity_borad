@@ -34,7 +34,7 @@ export default function MyApplicationsPage() {
               <div key={a.appId} className="rounded-xl border border-slate-100 bg-white p-3 shadow-card">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <Link to={`/opportunities/${a.slug}`} className="text-sm font-semibold text-slate-700 hover:text-brand-700">{a.title}</Link>
+                    <Link to={`/opportunities/${a.slug || a.oppId}`} className="text-sm font-semibold text-slate-700 hover:text-brand-700">{a.title}</Link>
                     <p className="text-xs text-slate-400">{a.orgName} · Nộp {fmtDate(a.appliedAt)}</p>
                   </div>
                   <div className="flex items-center gap-2">

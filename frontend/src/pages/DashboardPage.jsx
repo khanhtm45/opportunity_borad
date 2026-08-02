@@ -19,7 +19,9 @@ export default function DashboardPage() {
     if (t === 'applications') studentApi.myApplications().then((r) => setApps(r)).finally(() => setLoading(false))
     else if (t === 'bookmarks') {
       import('../api/client.js').then(({ default: api }) =>
-        api.get('/me/bookmarks?size=50').then((r) => setMarks((r.data.items || []).map((x) => x.opportunity))).finally(() => setLoading(false)))
+        api.get('/me/bookmarks?size=50').then((r) => setMarks(
+          (r.data.items || []).map((x) => x?.opportunity || x).filter(Boolean),
+        )).finally(() => setLoading(false)))
     }
     else if (t === 'notifications') studentApi.notifications().then((r) => setNotifs(r)).finally(() => setLoading(false))
   }
@@ -70,7 +72,7 @@ export default function DashboardPage() {
                   apps.map((a) => (
                     <div key={a.appId} className="rounded-xl border border-slate-100 bg-white p-3 shadow-card">
                       <div className="flex items-center justify-between gap-3">
-                        <Link to={`/opportunities/${a.slug}`} className="min-w-0">
+                        <Link to={`/opportunities/${a.slug || a.oppId}`} className="min-w-0">
                           <p className="text-sm font-semibold text-slate-700 hover:text-brand-700">{a.title}</p>
                           <p className="text-xs text-slate-400">Nộp {fmtDate(a.appliedAt)}</p>
                         </Link>
@@ -93,7 +95,7 @@ export default function DashboardPage() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {marks.length === 0 ? <p className="py-12 text-center text-slate-400">Chưa lưu cơ hội nào.</p> :
                   marks.map((o) => (
-                    <Link key={o.oppId} to={`/opportunities/${o.slug}`}
+                    <Link key={o.oppId} to={`/opportunities/${o.slug || o.oppId}`}
                       className="rounded-2xl border border-slate-100 bg-white p-4 shadow-card">
                       <h3 className="font-bold text-slate-800">{o.title}</h3>
                       <p className="text-xs text-slate-400">{o.orgName}</p>

@@ -242,10 +242,10 @@ export default function HomePage() {
             </p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {featured.slice(0, 3).map((o) => (
+              {featured.filter(Boolean).slice(0, 3).map((o) => (
                 <Link
                   key={o.oppId}
-                  to={`/opportunities/${o.slug}`}
+                  to={`/opportunities/${o.slug || o.oppId}`}
                   className="rounded-2xl border border-slate-100 bg-white p-5 shadow-card transition hover:-translate-y-0.5 hover:shadow-card-hover"
                 >
                   <p className="truncate font-bold text-slate-800">{o.title}</p>
